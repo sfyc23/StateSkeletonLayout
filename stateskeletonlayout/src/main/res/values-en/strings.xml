@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ssl_desc_loading">Loading</string>
+    <string name="ssl_desc_empty">No content</string>
+    <string name="ssl_desc_error">Loading failed</string>
+</resources>

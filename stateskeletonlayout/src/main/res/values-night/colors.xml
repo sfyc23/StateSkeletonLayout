@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ssl_mask_default">#FF2E3339</color>
+    <color name="ssl_highlight_default">#FF56616E</color>
+</resources>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 示例业务内容：资料卡片（本地假数据）。内容取形骨架按这些叶子 View 生成形状。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/demo_card"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <View
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/demo_avatar_placeholder" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/demo_profile_name"
+                android:textColor="@color/demo_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                tools:text="演示用户 A" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/demo_profile_title"
+                android:textColor="@color/demo_text_secondary"
+                android:textSize="14sp"
+                tools:text="Android 开发工程师" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@color/demo_card"
+        android:padding="16dp"
+        android:text="@string/demo_profile_bio"
+        android:textColor="@color/demo_text_primary"
+        android:textSize="14sp"
+        tools:text="这段简介是本地假数据…" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp"
+        android:background="@color/demo_card"
+        android:gravity="center"
+        android:text="@string/demo_state_retry"
+        android:textColor="@color/demo_accent"
+        android:textSize="15sp" />
+
+</LinearLayout>

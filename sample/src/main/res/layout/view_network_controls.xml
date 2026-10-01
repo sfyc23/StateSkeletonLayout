@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 控制区独立滚动，大字体与横屏下所有操作均可达；列表不放入 ScrollView。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="false">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/network_hint"
+            android:textColor="@color/network_text_secondary"
+            android:textSize="13sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:labelFor="@id/scenario_spinner"
+            android:text="@string/network_scenario_label"
+            android:textColor="@color/network_text_primary" />
+        <Spinner
+            android:id="@+id/scenario_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:prompt="@string/network_scenario_label"
+            android:spinnerMode="dialog" />
+        <RadioGroup
+            android:id="@+id/latency_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/latency_100"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/network_latency_100"
+                android:textSize="12sp" />
+            <RadioButton
+                android:id="@+id/latency_500"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/network_latency_500"
+                android:textSize="12sp" />
+            <RadioButton
+                android:id="@+id/latency_1500"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/network_latency_1500"
+                android:textSize="12sp" />
+        </RadioGroup>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            style="?android:attr/buttonBarStyle"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/toggle_layout"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/network_toggle_layout"
+                android:textSize="12sp" />
+            <Button
+                android:id="@+id/replay"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/demo_btn_replay" />
+        </LinearLayout>
+        <Button
+            android:id="@+id/load_next"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/network_load_next" />
+        <TextView
+            android:id="@+id/network_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            android:textColor="@color/network_text_primary"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/demo_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/network_card"
+            android:maxLines="5"
+            android:padding="8dp"
+            android:textColor="@color/network_text_secondary"
+            android:textSize="12sp"
+            android:typeface="monospace" />
+    </LinearLayout>
+</ScrollView>

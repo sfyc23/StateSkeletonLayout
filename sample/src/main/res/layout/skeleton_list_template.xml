@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表骨架模板：静态重复 8 行，覆盖首屏；业务 Adapter 不被替换。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+    <include layout="@layout/item_skeleton_row" />
+
+</LinearLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/network_background"
+    android:orientation="vertical">
+    <include
+        android:id="@+id/feed"
+        layout="@layout/view_network_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+    <include
+        android:id="@+id/controls"
+        layout="@layout/view_network_controls"
+        android:layout_width="match_parent"
+        android:layout_height="224dp" />
+</LinearLayout>

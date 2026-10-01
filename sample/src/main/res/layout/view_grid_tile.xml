@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:background="@color/network_card"
+    android:minHeight="48dp"
+    android:orientation="vertical"
+    android:padding="12dp">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:background="@color/network_placeholder"
+        android:importantForAccessibility="no" />
+    <TextView
+        android:id="@+id/tile_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/network_text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+    <TextView
+        android:id="@+id/tile_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/network_text_secondary"
+        android:textSize="12sp" />
+</LinearLayout>

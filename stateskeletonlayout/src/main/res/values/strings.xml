@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 进入 Loading 时的无障碍播报文案（宿主可通过同名资源覆盖）。 -->
+    <string name="ssl_desc_loading">正在加载</string>
+    <!-- 进入 Empty 时的无障碍播报文案。 -->
+    <string name="ssl_desc_empty">内容为空</string>
+    <!-- 进入 Error 时的无障碍播报文案。 -->
+    <string name="ssl_desc_error">加载失败</string>
+</resources>

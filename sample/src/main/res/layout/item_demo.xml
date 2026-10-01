@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 示例目录条目：标题 + 能力说明。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/demo_card"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/demo_item_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/demo_text_primary"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        tools:text="基础四态" />
+
+    <TextView
+        android:id="@+id/demo_item_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/demo_text_secondary"
+        android:textSize="13sp"
+        tools:text="手动切换 Content / Loading / Empty / Error" />
+
+</LinearLayout>

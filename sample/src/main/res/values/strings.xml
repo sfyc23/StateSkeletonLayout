@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="network_banner_title">网络多类型列表 · 内容版本 %1$d</string>
+    <string name="network_hint">首屏使用骨架；下拉刷新和上拉分页保留内容。所有请求均为本地模拟。</string>
+    <string name="network_scenario_success">正常三页</string>
+    <string name="network_scenario_empty">首屏为空</string>
+    <string name="network_scenario_error_once">首屏失败一次</string>
+    <string name="network_scenario_error">首屏持续失败</string>
+    <string name="network_scenario_refresh_empty">刷新后为空</string>
+    <string name="network_scenario_refresh_error">刷新失败</string>
+    <string name="network_scenario_append_error">第二页失败一次</string>
+    <string name="network_scenario_no_more">首屏即无更多</string>
+    <string name="network_scenario_empty_last">第二页为空末页</string>
+    <string name="network_scenario_label">模拟场景</string>
+    <string name="network_latency_100">100 ms</string>
+    <string name="network_latency_500">500 ms</string>
+    <string name="network_latency_1500">1500 ms</string>
+    <string name="network_toggle_layout">切换 Linear / Grid</string>
+    <string name="network_load_next">加载下一页</string>
+    <string name="network_busy">请求进行中…</string>
+    <string name="network_status">%1$s · %2$s · %3$d ms\n请求 %4$s · nextPage=%5$s · 业务 %6$d / 模型 %7$d</string>
+    <string name="network_idle">空闲</string>
+    <string name="network_error_status">%1$s\n失败：%2$s。刷新失败请再次下拉，分页失败请再次上拉或加载下一页。</string>
+    <string name="network_error_fallback">模拟请求失败</string>
+    <string name="network_error_description">本次模拟请求失败，可点击重试；重新播放会重置故障。</string>
+    <string name="network_empty_description">本次成功返回空内容，请在控制区重新播放或切换场景。</string>
+    <string name="network_section_featured">精选演示</string>
+    <string name="network_section_records">文章与推荐</string>
+    <string name="network_profile_name">演示用户 %1$d</string>
+    <string name="network_profile_subtitle">Android 开发者 · 内容版本 %1$d</string>
+    <string name="network_article_title">文章 %1$d · 多类型列表实践</string>
+    <string name="network_article_body">这是一条确定性的模拟内容，刷新后版本更新为 %1$d。图片使用本地色块占位。</string>
+    <string name="network_tile_title">推荐卡片 %1$d</string>
+    <string name="network_tile_subtitle">内容版本 %1$d</string>
+    <string name="network_carousel_title">横向推荐 · 可向两侧滑动</string>
+    <string name="network_carousel_child">推荐项目 %1$d</string>
+    <string name="network_carousel_description">推荐项目 %1$d，点击记录日志</string>
+    <string name="demo_app_name">StateSkeleton 演示</string>
+    <string name="demo_catalog_title">StateSkeletonLayout 示例</string>
+    <string name="demo_catalog_subtitle">点击条目进入对应演示；返回键回到本页</string>
+
+    <string name="demo_btn_loading">Loading</string>
+    <string name="demo_btn_content">Content</string>
+    <string name="demo_btn_empty">Empty</string>
+    <string name="demo_btn_error">Error</string>
+    <string name="demo_btn_replay">重新播放</string>
+
+    <string name="demo_basic_hint">手动切换四态；错误页重试按钮只发事件，点击次数如下</string>
+    <string name="demo_retry_count">重试点击：%1$d 次（状态保持 ERROR，由页面决定下一步）</string>
+
+    <string name="demo_content_hint">资料卡片已布局完成后进入 Loading，骨架按真实内容取形</string>
+    <string name="demo_template_hint">内容无尺寸时改用独立模板；模板只描述形状，不含真实数据</string>
+
+    <string name="demo_effect_solid">纯色</string>
+    <string name="demo_effect_shimmer">流光</string>
+    <string name="demo_effect_pulse">脉冲</string>
+    <string name="demo_effect_toggle_direction">切换流光方向</string>
+    <string name="demo_effect_hint">三种效果互斥，运行时整体替换 SkeletonConfig 即时生效</string>
+
+    <string name="demo_recycler_hint">列表使用独立模板骨架；业务 Adapter 不被替换，滚动位置不受影响</string>
+    <string name="demo_recycler_toggle">切换 Linear / Grid</string>
+
+    <string name="demo_lottie_hint">自定义加载布局中的 Lottie 由页面在状态回调中成对启停，库不感知 Lottie</string>
+    <string name="demo_lottie_state">Lottie 状态：%1$s</string>
+
+    <string name="demo_timing_hint">显示延迟 150ms、最短展示 600ms；观察 100ms 请求跳过骨架的现象</string>
+    <string name="demo_timing_100">模拟 100ms 请求</string>
+    <string name="demo_timing_500">模拟 500ms 请求</string>
+    <string name="demo_timing_1500">模拟 1500ms 请求</string>
+
+    <string name="demo_rapid_hint">Loading 后 100ms 内连续提交 Content、Empty、Error，最终只呈现 Error</string>
+    <string name="demo_rapid_fire">连续发射</string>
+
+    <string name="demo_lifecycle_hint">切后台 / 切页面 / 旋转设备，观察日志中的动画停止与恢复；页面销毁后无残留任务</string>
+
+    <string name="demo_a11y_hint">进入各状态会播报一次；骨架不可聚焦，隐藏内容不可被读屏访问；关闭系统动画后显示静态骨架</string>
+    <string name="demo_a11y_toggle_announce">播报开关</string>
+
+    <string name="demo_state_empty_title">暂无内容</string>
+    <string name="demo_state_empty_desc">这里空空如也，稍后再试</string>
+    <string name="demo_state_error_title">加载失败</string>
+    <string name="demo_state_error_desc">请检查网络后重试</string>
+    <string name="demo_state_retry">重试</string>
+    <string name="demo_state_loading">正在加载…</string>
+
+    <string name="demo_profile_name">演示用户 A</string>
+    <string name="demo_profile_title">Android 开发工程师 · 演示数据</string>
+    <string name="demo_profile_bio">这段简介是本地假数据，用于演示内容取形骨架，不含任何真实个人信息。</string>
+    <string name="demo_row_title">演示条目 %1$d</string>
+    <string name="demo_row_subtitle">本地假数据副标题</string>
+
+    <string name="demo_defaults_global_hint">进入页面即 install 全字段全局默认并程序化创建实例 A；再次 install 部分覆盖后创建实例 B，观察整体替换语义与已创建实例不受影响</string>
+    <string name="demo_defaults_partial_hint">全局默认仅声明 maskColor 与 effect，其余字段回落库内置默认；实例 R 另有运行时 setter 覆盖</string>
+    <string name="demo_defaults_priority_hint">按步骤叠加库内置、Theme、Global、XML、运行时 setter 五层，核对探针字段胜出方</string>
+    <string name="demo_defaults_invalid_hint">安装非法全局默认后创建实例，观察含属性名的 IllegalArgumentException；每次演示后自动恢复基准配置</string>
+    <string name="demo_defaults_instance_a">实例 A（程序化创建，继承 install 配置）</string>
+    <string name="demo_defaults_instance_b">实例 B（再次 install 后创建）</string>
+    <string name="demo_defaults_instance_l">实例 L（仅 Global 两字段）</string>
+    <string name="demo_defaults_instance_r">实例 R（Global + setter 覆盖 animationDurationMillis = 2500）</string>
+    <string name="demo_defaults_instance_c">实例 C（全字段 Global 覆盖）</string>
+    <string name="demo_defaults_xml_probe">XML 层探针控件（步骤 4、5 读取此控件）</string>
+    <string name="demo_defaults_step_instance">步骤 %1$d 观察实例</string>
+    <string name="demo_defaults_btn_install_b">再次安装部分覆盖并创建实例 B</string>
+    <string name="demo_defaults_btn_full">切换为全字段覆盖并创建实例 C</string>
+    <string name="demo_defaults_btn_next">执行下一步</string>
+    <string name="demo_defaults_btn_invalid_radius">cornerRadius 为负</string>
+    <string name="demo_defaults_btn_invalid_duration">animationDurationMillis 为 0</string>
+    <string name="demo_defaults_btn_invalid_pulse">pulseMinAlpha 大于 pulseMaxAlpha</string>
+    <string name="demo_defaults_btn_invalid_template">TEMPLATE 无模板</string>
+</resources>

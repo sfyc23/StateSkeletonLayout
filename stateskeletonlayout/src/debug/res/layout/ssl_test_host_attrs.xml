@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Robolectric 测试夹具：带完整属性的单内容容器（仅 debug 构建，不进 Release AAR）。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:ignore="HardcodedText"
+    app:ssl_emptyLayout="@layout/ssl_test_state_simple"
+    app:ssl_errorLayout="@layout/ssl_test_state_simple"
+    app:ssl_errorRetryViewId="@id/ssl_test_retry"
+    app:ssl_skeletonEffect="pulse"
+    app:ssl_loadingShowDelay="0"
+    app:ssl_minLoadingDuration="300">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="content"
+        android:visibility="visible" />
+
+</com.sfyc.ssl.StateSkeletonLayout>

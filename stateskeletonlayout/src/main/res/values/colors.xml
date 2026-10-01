@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 骨架基础颜色默认值。 -->
+    <color name="ssl_mask_default">#E3E6EA</color>
+    <!-- 流光高亮颜色默认值。 -->
+    <color name="ssl_highlight_default">#FFFFFF</color>
+</resources>

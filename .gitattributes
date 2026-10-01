@@ -1,0 +1,31 @@
+# Git 属性：统一换行、区分二进制，避免 Windows/Unix 协作污染
+* text=auto
+
+# 脚本与源码固定换行
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.kts text eol=lf
+*.kt text eol=lf
+*.java text eol=lf
+*.xml text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+*.md text eol=lf
+*.pro text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# 二进制不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.jar binary
+*.aar binary
+*.apk binary
+*.aab binary
+*.jks binary
+*.keystore binary

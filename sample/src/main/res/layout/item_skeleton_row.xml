@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表示例的骨架行模板：静态占位形状，重复多份覆盖首屏。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@color/demo_avatar_placeholder" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="160dp"
+            android:layout_height="16dp"
+            android:background="@color/demo_avatar_placeholder" />
+
+        <View
+            android:layout_width="220dp"
+            android:layout_height="12dp"
+            android:layout_marginTop="6dp"
+            android:background="@color/demo_avatar_placeholder" />
+
+    </LinearLayout>
+
+</LinearLayout>

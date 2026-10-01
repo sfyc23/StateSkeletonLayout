@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 全部骨架矩形的默认圆角。 -->
+    <dimen name="ssl_corner_radius_default">8dp</dimen>
+</resources>

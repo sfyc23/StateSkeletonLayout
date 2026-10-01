@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="network_background">#14181C</color>
+    <color name="network_card">#242B32</color>
+    <color name="network_text_primary">#E8EDF2</color>
+    <color name="network_text_secondary">#B8C2CC</color>
+    <color name="network_placeholder">#455260</color>
+</resources>

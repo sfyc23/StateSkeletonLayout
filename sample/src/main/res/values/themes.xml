@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.StateSkeletonDemo" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/demo_background</item>
+    </style>
+
+    <!-- 全局默认示例的 Theme 层探针样式：仅用于 ContextThemeWrapper 局部演示，不挂到应用主题。 -->
+    <style name="DemoSslThemeDefaults" parent="ssl_StateSkeletonLayout">
+        <item name="ssl_skeletonEffect">solid</item>
+        <item name="ssl_maskColor">#B39DDB</item>
+        <item name="ssl_cornerRadius">20dp</item>
+    </style>
+
+    <!-- 包装主题：把 ssl_stateSkeletonLayoutStyle 指到探针样式，模拟宿主 AppTheme 接入形态。 -->
+    <style name="DemoSslThemeLayer" parent="Theme.StateSkeletonDemo">
+        <item name="ssl_stateSkeletonLayoutStyle">@style/DemoSslThemeDefaults</item>
+    </style>
+</resources>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- StateSkeletonLayout 公开属性：全部使用 ssl_ 前缀，避免与宿主工程资源重名。
+        注意：resourcePrefix 要求 styleable 名同样带前缀，故命名为 SslStateSkeletonLayout；
+        XML 使用侧的属性名（ssl_*）不受影响。 -->
+    <declare-styleable name="SslStateSkeletonLayout">
+        <!-- XML 加载完成后的初始状态：content | loading | empty | error，默认 content。 -->
+        <attr name="ssl_initialState" format="enum">
+            <enum name="content" value="0" />
+            <enum name="loading" value="1" />
+            <enum name="empty" value="2" />
+            <enum name="error" value="3" />
+        </attr>
+        <!-- 空内容页布局。请求 EMPTY 却未配置时会抛异常，不显示空白页。 -->
+        <attr name="ssl_emptyLayout" format="reference" />
+        <!-- 错误页布局。请求 ERROR 却未配置时会抛异常。 -->
+        <attr name="ssl_errorLayout" format="reference" />
+        <!-- 自定义加载布局。useSkeleton 为 false（默认）时必填；未配置会自动回退到骨架并打警告。 -->
+        <attr name="ssl_loadingLayout" format="reference" />
+
+        <!-- 是否使用骨架遮罩：true=骨架，false=自定义布局，默认 false（即默认自定义布局）。 -->
+        <attr name="ssl_useSkeleton" format="boolean" />
+        <!-- 骨架形状来源：content（内容取形）或 template（独立模板），默认 content。 -->
+        <attr name="ssl_skeletonSource" format="enum">
+            <enum name="content" value="0" />
+            <enum name="template" value="1" />
+        </attr>
+        <!-- 独立骨架模板布局。source 为 template 时必填，仅描述形状。 -->
+        <attr name="ssl_skeletonTemplate" format="reference" />
+        <!-- 骨架效果：solid（纯色）| shimmer（流光）| pulse（脉冲），默认 shimmer。 -->
+        <attr name="ssl_skeletonEffect" format="enum">
+            <enum name="solid" value="0" />
+            <enum name="shimmer" value="1" />
+            <enum name="pulse" value="2" />
+        </attr>
+        <!-- 骨架基础颜色，默认 @color/ssl_mask_default。 -->
+        <attr name="ssl_maskColor" format="color" />
+        <!-- 流光高亮颜色，默认 @color/ssl_highlight_default。 -->
+        <attr name="ssl_highlightColor" format="color" />
+        <!-- 全部骨架矩形的默认圆角，dimension，默认 8dp。 -->
+        <attr name="ssl_cornerRadius" format="dimension" />
+        <!-- 单轮骨架动画时长，单位毫秒，必须大于 0，默认 1200。 -->
+        <attr name="ssl_animationDuration" format="integer" />
+        <!-- 流光方向：start_to_end 遵循 RTL，默认 start_to_end。 -->
+        <attr name="ssl_shimmerDirection" format="enum">
+            <enum name="start_to_end" value="0" />
+            <enum name="end_to_start" value="1" />
+        </attr>
+        <!-- 流光角度，单位度，默认 0，运行时归一化到 [0, 359]。 -->
+        <attr name="ssl_shimmerAngle" format="integer" />
+        <!-- 脉冲最小透明度 [0, 1]，不得大于最大值，默认 0.35。 -->
+        <attr name="ssl_pulseMinAlpha" format="float" />
+        <!-- 脉冲最大透明度 [0, 1]，默认 1.0。 -->
+        <attr name="ssl_pulseMaxAlpha" format="float" />
+        <!-- 请求 Loading 后延迟多久才真正显示，单位毫秒，默认 0（立即反馈）。 -->
+        <attr name="ssl_loadingShowDelay" format="integer" />
+        <!-- Loading 一旦显示至少保留多久，单位毫秒，默认 300。 -->
+        <attr name="ssl_minLoadingDuration" format="integer" />
+        <!-- 状态切换效果：none（立即）| crossfade（交叉淡入淡出），默认 crossfade。 -->
+        <attr name="ssl_transitionEffect" format="enum">
+            <enum name="none" value="0" />
+            <enum name="crossfade" value="1" />
+        </attr>
+        <!-- 状态切换时长，单位毫秒，默认 180。 -->
+        <attr name="ssl_transitionDuration" format="integer" />
+        <!-- 错误布局内的重试 View ID；未配置则不绑定统一重试入口。 -->
+        <attr name="ssl_errorRetryViewId" format="reference" />
+        <!-- 进入 Loading/Empty/Error 时是否做一次性无障碍播报，默认 true。 -->
+        <attr name="ssl_announceStateChanges" format="boolean" />
+    </declare-styleable>
+
+    <!-- Theme Attribute：指向一个 Style，作为全局默认配置的辅助层。
+        优先级：库内置 < 本属性（Theme） < Global Config < XML 属性 < 运行时 setter。
+        宿主可在 AppTheme 中通过 <item name="ssl_stateSkeletonLayoutStyle">@style/…</item> 引用。 -->
+    <attr name="ssl_stateSkeletonLayoutStyle" format="reference" />
+</resources>

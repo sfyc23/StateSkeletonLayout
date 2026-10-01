@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 非法值校验示例：安装非法全局默认后创建实例，观察含属性名的 IllegalArgumentException。 -->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/demo_defaults_invalid_hint"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/demo_btn_radius"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_defaults_btn_invalid_radius" />
+
+        <Button
+            android:id="@+id/demo_btn_duration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_defaults_btn_invalid_duration" />
+
+        <Button
+            android:id="@+id/demo_btn_pulse"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_defaults_btn_invalid_pulse" />
+
+        <Button
+            android:id="@+id/demo_btn_template"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_defaults_btn_invalid_template" />
+
+        <TextView
+            android:id="@+id/demo_result"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_primary"
+            android:textSize="12sp"
+            android:typeface="monospace"
+            tools:text="result" />
+
+        <TextView
+            android:id="@+id/demo_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="12sp"
+            android:typeface="monospace"
+            tools:text="log" />
+
+    </LinearLayout>
+
+</ScrollView>

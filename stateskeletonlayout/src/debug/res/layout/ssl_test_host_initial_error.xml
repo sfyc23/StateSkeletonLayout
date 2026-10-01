@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Robolectric 测试夹具：初始状态为 error（仅 debug 构建）。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:ignore="HardcodedText"
+    app:ssl_initialState="error"
+    app:ssl_emptyLayout="@layout/ssl_test_state_simple"
+    app:ssl_errorLayout="@layout/ssl_test_state_simple">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="content" />
+
+</com.sfyc.ssl.StateSkeletonLayout>

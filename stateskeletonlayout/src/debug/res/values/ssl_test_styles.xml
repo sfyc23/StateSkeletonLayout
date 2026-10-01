@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="ssl_test_pageStyle" format="reference" />
+    <style name="ssl_TestTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="ssl_stateSkeletonLayoutStyle">@style/ssl_TestDefaults</item>
+        <item name="ssl_test_pageStyle">@style/ssl_TestPage</item>
+        <item name="android:colorAccent">#FF123456</item>
+    </style>
+    <style name="ssl_TestDefaults" parent="ssl_StateSkeletonLayout">
+        <item name="ssl_skeletonEffect">solid</item>
+        <item name="ssl_maskColor">#FFB39DDB</item>
+        <item name="ssl_cornerRadius">20dp</item>
+        <item name="ssl_minLoadingDuration">450</item>
+    </style>
+    <style name="ssl_TestPageParent" parent="">
+        <item name="ssl_skeletonEffect">shimmer</item>
+        <item name="ssl_highlightColor">?android:attr/colorAccent</item>
+    </style>
+    <style name="ssl_TestPage" parent="ssl_TestPageParent">
+        <item name="ssl_maskColor">#FF222222</item>
+        <item name="ssl_animationDuration">800</item>
+    </style>
+</resources>

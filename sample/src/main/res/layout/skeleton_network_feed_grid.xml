@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 只描述形状；按真实列表顺序排列，超出当前视口的节点由控件裁剪。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="8dp" android:importantForAccessibility="noHideDescendants">
+  <View android:layout_width="match_parent" android:layout_height="88dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  <View android:layout_width="match_parent" android:layout_height="20dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:baselineAligned="false">
+    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+      <View android:layout_width="match_parent" android:layout_height="72dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+      <View android:layout_width="match_parent" android:layout_height="72dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+      <View android:layout_width="0dp" android:layout_height="0dp" android:background="@color/network_placeholder" app:layout_constraintDimensionRatio="16:9" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+    <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+    <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+      <View android:layout_width="144dp" android:layout_height="96dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="144dp" android:layout_height="96dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:layout_marginStart="8dp" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_2" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+      <View android:layout_width="0dp" android:layout_height="0dp" android:background="@color/network_placeholder" app:layout_constraintDimensionRatio="16:9" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+    <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+    <View android:layout_width="match_parent" android:layout_height="72dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_3" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_4" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_5" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_6" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_7" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp">
+    <View android:layout_width="48dp" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" android:id="@+id/network_skeleton_avatar_8" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+      <View android:layout_width="match_parent" android:layout_height="18dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+      <View android:layout_width="match_parent" android:layout_height="14dp" android:layout_marginTop="8dp" android:background="@color/network_placeholder" />
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

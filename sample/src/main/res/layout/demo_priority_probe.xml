@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_animationDuration="800"
+    app:ssl_cornerRadius="30dp"
+    app:ssl_emptyLayout="@layout/state_empty"
+    app:ssl_errorLayout="@layout/state_error"
+    app:ssl_maskColor="#E6A23C"
+    app:ssl_skeletonEffect="shimmer"
+    app:ssl_useSkeleton="true">
+
+    <include layout="@layout/content_profile" />
+
+</com.sfyc.ssl.StateSkeletonLayout>

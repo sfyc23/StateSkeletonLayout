@@ -1,0 +1,32 @@
+name: Android verification
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Verify library and sample
+        shell: pwsh
+        run: |
+          .\gradlew.bat `
+            :stateskeletonlayout:testDebugUnitTest `
+            :stateskeletonlayout:lintRelease `
+            :stateskeletonlayout:assembleDebug `
+            :stateskeletonlayout:assembleRelease `
+            :stateskeletonlayout:publishReleasePublicationToMavenLocal `
+            :stateskeletonlayout:assembleDebugAndroidTest `
+            :sample:testDebugUnitTest `
+            :sample:lintDebug `
+            :sample:lintRelease `
+            :sample:assembleDebug `
+            :sample:assembleRelease `
+            :sample:assembleDebugAndroidTest

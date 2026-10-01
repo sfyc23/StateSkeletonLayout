@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 优先级链示例：库内置 < Theme < Global < XML < 运行时 setter 逐步叠加对比。 -->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/demo_defaults_priority_hint"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="13sp" />
+
+        <!-- XML 层探针控件：探针字段与 Theme / Global 取值互不相同。 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/demo_defaults_xml_probe"
+            android:textColor="@color/demo_text_primary"
+            android:textSize="14sp" />
+
+        <FrameLayout
+            android:id="@+id/demo_xml_probe_host"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="4dp" />
+
+        <Button
+            android:id="@+id/demo_btn_next"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_defaults_btn_next" />
+
+        <LinearLayout
+            android:id="@+id/demo_steps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/demo_compare"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_primary"
+            android:textSize="11sp"
+            android:typeface="monospace"
+            tools:text="compare" />
+
+        <TextView
+            android:id="@+id/demo_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="12sp"
+            android:typeface="monospace"
+            tools:text="log" />
+
+    </LinearLayout>
+
+</ScrollView>

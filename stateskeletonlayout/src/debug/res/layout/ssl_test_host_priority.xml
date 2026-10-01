@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    style="@style/ssl_TestPage"
+    app:ssl_maskColor="#FF333333" app:ssl_useSkeleton="false" app:ssl_minLoadingDuration="0">
+    <View android:layout_width="40dp" android:layout_height="20dp" />
+</com.sfyc.ssl.StateSkeletonLayout>

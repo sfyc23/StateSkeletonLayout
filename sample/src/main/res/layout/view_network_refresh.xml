@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.scwang.smart.refresh.layout.SmartRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/refresh_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:srlEnableRefresh="false"
+    app:srlEnableLoadMore="false"
+    app:srlEnableAutoLoadMore="false"
+    app:srlEnableOverScrollBounce="false">
+    <com.scwang.smart.refresh.header.ClassicsHeader
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <com.sfyc.ssl.StateSkeletonLayout
+        android:id="@+id/state_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:ssl_initialState="content"
+        app:ssl_emptyLayout="@layout/state_network_feed_empty"
+        app:ssl_errorLayout="@layout/state_network_feed_error"
+        app:ssl_errorRetryViewId="@id/demo_retry"
+        app:ssl_useSkeleton="true"
+        app:ssl_skeletonEffect="shimmer"
+        app:ssl_skeletonSource="template"
+        app:ssl_skeletonTemplate="@layout/skeleton_network_feed_linear"
+        app:ssl_loadingShowDelay="150"
+        app:ssl_minLoadingDuration="600"
+        app:ssl_transitionEffect="crossfade">
+        <com.airbnb.epoxy.EpoxyRecyclerView
+            android:id="@+id/epoxy_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:saveEnabled="false" />
+    </com.sfyc.ssl.StateSkeletonLayout>
+    <com.scwang.smart.refresh.footer.ClassicsFooter
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</com.scwang.smart.refresh.layout.SmartRefreshLayout>

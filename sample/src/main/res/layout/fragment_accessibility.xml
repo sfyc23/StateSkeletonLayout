@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 无障碍示例：状态播报、焦点隔离、动画降级说明。 -->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/demo_a11y_hint"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="13sp" />
+
+        <com.sfyc.ssl.StateSkeletonLayout
+            android:id="@+id/demo_state"
+            android:layout_width="match_parent"
+            android:layout_height="280dp"
+            android:layout_marginTop="12dp"
+            app:ssl_emptyLayout="@layout/state_empty"
+            app:ssl_errorLayout="@layout/state_error"
+            app:ssl_errorRetryViewId="@id/demo_retry"
+            app:ssl_useSkeleton="true"
+            app:ssl_skeletonEffect="shimmer"
+            app:ssl_skeletonSource="template"
+            app:ssl_skeletonTemplate="@layout/skeleton_profile_template">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/demo_card"
+                android:gravity="center"
+                android:text="@string/demo_btn_content"
+                android:textColor="@color/demo_text_primary"
+                android:textSize="18sp" />
+
+        </com.sfyc.ssl.StateSkeletonLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/demo_btn_loading"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_loading" />
+
+            <Button
+                android:id="@+id/demo_btn_empty"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_empty" />
+
+            <Button
+                android:id="@+id/demo_btn_error"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_error" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_a11y_toggle_announce"
+                android:textColor="@color/demo_text_primary"
+                android:textSize="14sp" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/demo_switch_announce"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/demo_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="12sp"
+            android:typeface="monospace"
+            tools:text="log" />
+
+    </LinearLayout>
+
+</ScrollView>

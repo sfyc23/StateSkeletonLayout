@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 横屏把可滚动控制区放到侧边，避免挤掉列表视口。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:baselineAligned="false"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/network_background"
+    android:orientation="horizontal">
+    <include
+        android:id="@+id/feed"
+        layout="@layout/view_network_refresh"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+    <include
+        android:id="@+id/controls"
+        layout="@layout/view_network_controls"
+        android:layout_width="240dp"
+        android:layout_height="match_parent" />
+</LinearLayout>

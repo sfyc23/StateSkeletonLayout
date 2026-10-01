@@ -9,7 +9,7 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 - UI：Android View System + XML + ViewBinding，不引入 Jetpack Compose
 - 环境：Kotlin 2.2.10、AGP 8.13.2、Gradle 8.14、`compileSdk` / `targetSdk` 36、
   `minSdk` 26、JVM 17
-- 库依赖：仅 AndroidX Annotation（无 Core、Lottie、Material、Navigation、Lifecycle）
+- 库显式依赖：仅 AndroidX Annotation（无 Core、Lottie、Material、Navigation、Lifecycle）；Kotlin 插件自动添加 Kotlin 标准库
 
 已完成模块与包名迁移。
 示例源码包与 namespace 不同，R / ViewBinding 使用 `com.sfyc.demo.ssl`；新示例按新 applicationId 独立安装。
@@ -17,7 +17,39 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 
 ## 接入方式
 
-本工程暂不发布 Maven 制品。宿主工程以本地模块依赖接入：
+### JitPack（0.0.1）
+
+本工程通过 JitPack 发布库模块的 Release AAR 和源码包，示例应用不进入发布制品。
+在宿主工程的 `settings.gradle.kts` 中加入仓库：
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven(url = "https://jitpack.io") {
+            content {
+                includeGroup("com.github.sfyc23")
+            }
+        }
+    }
+}
+```
+
+然后在应用模块的 `build.gradle.kts` 中添加依赖：
+
+```kotlin
+dependencies {
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.1")
+}
+```
+
+构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.1)。
+首次请求该版本时 JitPack 会构建制品，只有构建成功后才能解析依赖。
+
+### 本地模块
+
+需要直接修改库源码时，也可以在宿主工程中以本地模块依赖接入：
 
 ```kotlin
 dependencies {
@@ -564,6 +596,31 @@ Windows 跨盘构建已验证：当前缓存位于 F 盘、项目位于 G 盘，
 - M2004J7AC（Android 12 / API 31）拒绝安装 `INSTALL_FAILED_USER_RESTRICTED`；
   两模块设备测试均未执行，Release 运行、实际手势、TalkBack 与屏宽矩阵仍需补验。
 
+## 版本发布
+
+版本号在根目录 `gradle.properties` 的 `libraryVersion` 中统一维护，库 POM 与示例应用读取同一值。
+当前版本为 `0.0.1`，Git 标签也使用 `0.0.1`（不加 `v` 前缀）。
+
+1. 修改版本后，运行库和示例测试、Lint、Release 构建，并验证本地 Maven 发布：
+
+   ```powershell
+   .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
+   ```
+
+2. 提交并推送源码，然后创建并推送与 `libraryVersion` 相同的版本标签：
+
+   ```powershell
+   git push origin main
+   git tag -a 0.0.1 -m "Release 0.0.1"
+   git push origin 0.0.1
+   ```
+
+3. 在 JitPack 项目页面选择对应版本并请求构建，检查状态和日志；成功后核对 POM、AAR 与源码包。
+
+JitPack 使用 Java 17，通过根目录 `jitpack.yml` 调用库模块的 Maven 发布任务。
+GitHub 仓库包含库、示例、测试、Gradle Wrapper 与 CI；本机 SDK 配置、构建产物、缓存、签名密钥和内部 `docs/` 不入库。
+发布后的标签应保持不变，后续修改使用新的版本号。
+
 ## 限制（首版不包含）
 
 - Jetpack Compose 接口。
@@ -572,10 +629,10 @@ Windows 跨盘构建已验证：当前缓存位于 F 盘、项目位于 G 盘，
 - 替换 Adapter 的列表骨架、ViewPager2 骨架。
 - 节点级 XML 属性、任意 Path、逐行文本取形、旋转与缩放几何。
 - 公共自定义 LoadingRenderer 插件接口。
-- Maven 发布流水线、图片加载、服务端错误模型。
+- Maven Central 发布流水线、图片加载、服务端错误模型。
 
 ## 参考与许可
 
 - 设计思路参考 Drakeet StateLayout（https://github.com/Drakeet/StateLayout）与 Faltenreich SkeletonLayout（https://github.com/Faltenreich/SkeletonLayout），未复制其源代码，两者均为 Apache-2.0。
-- 库模块仅依赖 AndroidX Annotation（Apache-2.0）；示例模块另用 AppCompat / Material / RecyclerView / Lifecycle / Lottie / SmartRefreshLayout / Epoxy / Coroutines 等，均为 Apache-2.0（Checker Qual 为 MIT），仅供示例演示。
+- 库模块显式依赖 AndroidX Annotation（Apache-2.0），另有 Kotlin 标准库（Apache-2.0）；示例模块另用 AppCompat / Material / RecyclerView / Lifecycle / Lottie / SmartRefreshLayout / Epoxy / Coroutines 等，均为 Apache-2.0（Checker Qual 为 MIT），仅供示例演示。
 - 本工程采用 Apache License 2.0，见根目录 `LICENSE`。

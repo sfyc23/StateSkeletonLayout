@@ -1,0 +1,7 @@
+# JitPack 仅发布库模块；示例应用由 GitHub Actions 验证。
+jdk:
+  - openjdk17
+before_install:
+  - chmod +x gradlew
+install:
+  - ./gradlew :stateskeletonlayout:publishReleasePublicationToMavenLocal --no-daemon

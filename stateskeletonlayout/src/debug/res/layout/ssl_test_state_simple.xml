@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Robolectric 测试夹具：通用状态页（Empty/Error 共用，含重试按钮）。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:ignore="HardcodedText"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="state" />
+
+    <Button
+        android:id="@+id/ssl_test_retry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="retry" />
+
+</LinearLayout>

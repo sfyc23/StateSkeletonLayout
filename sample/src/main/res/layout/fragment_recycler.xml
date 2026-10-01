@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表骨架示例：RecyclerView 内容 + 模板骨架，可切换 Linear / Grid。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/demo_recycler_hint"
+        android:textColor="@color/demo_text_secondary"
+        android:textSize="13sp" />
+
+    <com.sfyc.ssl.StateSkeletonLayout
+        android:id="@+id/demo_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        app:ssl_emptyLayout="@layout/state_empty"
+        app:ssl_errorLayout="@layout/state_error"
+        app:ssl_useSkeleton="true"
+        app:ssl_skeletonEffect="shimmer"
+        app:ssl_skeletonSource="template"
+        app:ssl_skeletonTemplate="@layout/skeleton_list_template">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/demo_content_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            tools:itemCount="8"
+            tools:listitem="@layout/item_profile_row" />
+
+    </com.sfyc.ssl.StateSkeletonLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/demo_btn_toggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/demo_recycler_toggle" />
+
+        <Button
+            android:id="@+id/demo_btn_replay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/demo_btn_replay" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/demo_log"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@color/demo_card"
+        android:maxLines="5"
+        android:padding="8dp"
+        android:textColor="@color/demo_text_secondary"
+        android:textSize="12sp"
+        android:typeface="monospace"
+        tools:text="log" />
+
+</LinearLayout>

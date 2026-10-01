@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- StateSkeletonLayout 默认样式：收敛常用默认值，调用方可直接引用减少 XML 属性。
+        注意：resourcePrefix 要求库资源使用 ssl_ 前缀，故样式名采用下划线形式。 -->
+    <style name="ssl_StateSkeletonLayout">
+        <item name="ssl_useSkeleton">false</item>
+        <item name="ssl_skeletonSource">content</item>
+        <item name="ssl_skeletonEffect">shimmer</item>
+        <item name="ssl_maskColor">@color/ssl_mask_default</item>
+        <item name="ssl_highlightColor">@color/ssl_highlight_default</item>
+        <item name="ssl_cornerRadius">@dimen/ssl_corner_radius_default</item>
+        <item name="ssl_animationDuration">1200</item>
+        <item name="ssl_shimmerDirection">start_to_end</item>
+        <item name="ssl_shimmerAngle">0</item>
+        <item name="ssl_pulseMinAlpha">0.35</item>
+        <item name="ssl_pulseMaxAlpha">1.0</item>
+        <item name="ssl_loadingShowDelay">0</item>
+        <item name="ssl_minLoadingDuration">300</item>
+        <item name="ssl_transitionEffect">crossfade</item>
+        <item name="ssl_transitionDuration">180</item>
+        <item name="ssl_announceStateChanges">true</item>
+    </style>
+</resources>

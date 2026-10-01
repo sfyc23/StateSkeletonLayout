@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Robolectric 测试夹具：零业务子 View，膨胀时应抛明确异常（仅 debug 构建）。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_emptyLayout="@layout/ssl_test_state_simple"
+    app:ssl_errorLayout="@layout/ssl_test_state_simple" />
