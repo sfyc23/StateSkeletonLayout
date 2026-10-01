@@ -618,6 +618,7 @@ Windows 跨盘构建已验证：当前缓存位于 F 盘、项目位于 G 盘，
 3. 在 JitPack 项目页面选择对应版本并请求构建，检查状态和日志；成功后核对 POM、AAR 与源码包。
 
 JitPack 使用 Java 17，通过根目录 `jitpack.yml` 调用库模块的 Maven 发布任务。
+插件与依赖均优先从 Google、Maven Central 和 Gradle Plugin Portal 解析，阿里云镜像作为备用；依赖版本与 SHA-256 校验保持固定。
 GitHub 仓库包含库、示例、测试、Gradle Wrapper 与 CI；本机 SDK 配置、构建产物、缓存、签名密钥和内部 `docs/` 不入库。
 发布后的标签应保持不变，后续修改使用新的版本号。
 
