@@ -105,3 +105,8 @@ publishing {
         }
     }
 }
+
+// JitPack 重写 Gradle 元数据时会丢失源码包 classifier，改用 Maven POM 与标准源码包发布。
+tasks.withType<org.gradle.api.publish.tasks.GenerateModuleMetadata>().configureEach {
+    enabled = false
+}
