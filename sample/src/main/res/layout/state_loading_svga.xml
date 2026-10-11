@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 不声明 source：解析、失败处理和播放许可统一由页面控制。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/demo_svga_frame"
+        android:layout_width="144dp"
+        android:layout_height="256dp"
+        android:importantForAccessibility="noHideDescendants">
+
+        <com.opensource.svgaplayer.SVGAImageView
+            android:id="@+id/demo_svga_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:visibility="invisible"
+            app:autoPlay="false"
+            app:clearsAfterDetached="false"
+            app:loopCount="0" />
+
+        <ProgressBar
+            android:id="@+id/demo_svga_progress"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/demo_state_loading"
+        android:textColor="@color/demo_text_secondary"
+        android:textSize="14sp" />
+
+</LinearLayout>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SVGA 示例：操作区与状态区分开，手动切换会取消模拟请求。 -->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/demo_svga_hint"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="13sp" />
+
+        <com.sfyc.ssl.StateSkeletonLayout
+            android:id="@+id/demo_state"
+            android:layout_width="match_parent"
+            android:layout_height="320dp"
+            android:layout_marginTop="12dp"
+            app:ssl_emptyLayout="@layout/state_empty"
+            app:ssl_errorLayout="@layout/state_error"
+            app:ssl_errorRetryViewId="@id/demo_retry"
+            app:ssl_initialState="content"
+            app:ssl_loadingLayout="@layout/state_loading_svga"
+            app:ssl_loadingShowDelay="0"
+            app:ssl_minLoadingDuration="300"
+            app:ssl_useSkeleton="false">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/demo_card"
+                android:gravity="center"
+                android:text="@string/demo_btn_content"
+                android:textColor="@color/demo_text_primary"
+                android:textSize="18sp" />
+
+        </com.sfyc.ssl.StateSkeletonLayout>
+
+        <Button
+            android:id="@+id/demo_btn_replay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_svga_simulate" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/demo_btn_loading"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/demo_btn_loading" />
+
+            <Button
+                android:id="@+id/demo_btn_content"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/demo_btn_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/demo_btn_empty"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/demo_btn_empty" />
+
+            <Button
+                android:id="@+id/demo_btn_error"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="48dp"
+                android:text="@string/demo_btn_error" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/demo_svga_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/demo_text_primary"
+            android:textSize="14sp"
+            tools:text="资源：已就绪 · 动画：播放 · 页面：LOADING" />
+
+        <TextView
+            android:id="@+id/demo_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="12sp"
+            android:typeface="monospace"
+            tools:text="log" />
+
+    </LinearLayout>
+
+</ScrollView>

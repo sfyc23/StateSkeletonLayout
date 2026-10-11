@@ -1,15 +1,17 @@
 # stateskeletonlayout
 
+[English](README_EN.md) | **中文** | [修改日志](CHANGELOG.md)
+
 页面状态（内容 / 加载中 / 空内容 / 错误）与骨架加载（纯色 / 流光 / 脉冲）二合一的
 Android View 控件。页面只提交目标状态，不直接协调状态页可见性、骨架动画、
 最短展示时间与动画生命周期。
 
 - 库模块：`:stateskeletonlayout`（命名空间 `com.sfyc.ssl`）
-- 示例应用：`:sample`（源码包 `com.sfyc.demo`，namespace / applicationId `com.sfyc.demo.ssl`，15 个演示页）
+- 示例应用：`:sample`（源码包 `com.sfyc.demo`，namespace / applicationId `com.sfyc.demo.ssl`，16 个演示页）
 - UI：Android View System + XML + ViewBinding，不引入 Jetpack Compose
 - 环境：Kotlin 2.2.10、AGP 8.13.2、Gradle 8.14、`compileSdk` / `targetSdk` 36、
   `minSdk` 26、JVM 17
-- 库显式依赖：仅 AndroidX Annotation（无 Core、Lottie、Material、Navigation、Lifecycle）；Kotlin 插件自动添加 Kotlin 标准库
+- 库显式依赖：仅 AndroidX Annotation（无 Core、Lottie、SVGA、Material、Navigation、Lifecycle）；Kotlin 插件自动添加 Kotlin 标准库
 
 已完成模块与包名迁移。
 示例源码包与 namespace 不同，R / ViewBinding 使用 `com.sfyc.demo.ssl`；新示例按新 applicationId 独立安装。
@@ -314,6 +316,57 @@ Fragment 还应在 `onStop` 暂停、`onStart` 根据实际可见性恢复，在
 
 创建、动态绑定和释放回调只操作传入 View，不得重入 `render` 或修改控件配置。查询与公开回调返回原始布局根节点；内部包装容器由库负责交互隔离。呈现回调继续表示状态提交，不等淡入完成，也不代表窗口一直可见。
 
+## SVGA 加载示例
+
+示例首页的「SVGA 加载」演示本地动画作为自定义 Loading 页面。进入页面自动模拟 7 秒加载；
+「Loading」按钮持续加载，Content / Empty / Error 按钮取消模拟任务并切换状态，错误页重试重新执行模拟加载。
+Lottie 和其他示例继续保留，SVGA 依赖只进入 `sample`。
+
+固定版本为 `com.github.yyued:SVGAPlayer-Android:2.6.1`。应用接入时，需要在
+`settings.gradle.kts` 的 `dependencyResolutionManagement.repositories` 中配置 JitPack，内容过滤包含 `com.github.yyued`，
+再添加依赖。本项目已有 Parcelize 运行库，SVGA 旧扩展运行库会引入重复类，应用按以下配置排除：
+
+```kotlin
+implementation("com.github.yyued:SVGAPlayer-Android:2.6.1") {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-android-extensions-runtime")
+}
+```
+
+`sample` Manifest 的 `tools:replace="android:allowBackup,android:label"` 保留应用现有的备份设置和名称，
+解决 SVGA AAR 自带 `<application>` 属性导致的合并冲突。Release 使用官方建议的 Wire / SVGA Proto 保留规则，见 `sample/proguard-rules.pro`。
+
+素材打包在 `sample/src/main/assets/loading.svga`，来自
+[SVGAPlayer-Web-Lite 的 loading.svga](https://github.com/svga/SVGAPlayer-Web-Lite/blob/master/__test__/svga/loading.svga)。
+运行时不下载动画、不需要网络权限。资源为 SVGA 2.0 数据，画布 `375 × 667`，90 帧、15 FPS，标称单轮约 6 秒；
+示例采用 `144dp × 256dp` 的 `fitCenter` View，完整显示画布。
+
+接入由 `sample/src/main/java/com/sfyc/demo/svga/SvgaLoadingFragment.kt` 和两份 XML 展示：
+
+- `fragment_svga.xml`：配置 `ssl_useSkeleton="false"` 和 `ssl_loadingLayout="@layout/state_loading_svga"`。
+- `state_loading_svga.xml`：`SVGAImageView` 禁止自动播放、不设置 `source`，解析失败时保留进度指示和加载文案。
+- Fragment 使用 `SVGAParser(applicationContext).decodeFromAssets` 异步解析，通过弱引用、解析代次和目标 View 身份丢弃过期结果。
+- Loading 在窗口可见、View 生命周期达到 STARTED、资源就绪且系统动画启用时播放；隐藏或后台停止，恢复时从首帧重播。
+- 普通隐藏保留实体；布局释放或 `onDestroyView` 时停止并 `clear()`，迟到的未绑定实体直接清理。
+- 系统动画关闭时仅保留静态加载文案。模拟请求与动画解析、单轮播放完成事件相互独立。
+
+同一页面重复加载复用已解析实体；解析失败后，每次明确重试最多发起一次解析。
+配置变化会重新绑定页面并重新执行 7 秒模拟，不保存动画帧位置或剩余请求时间。
+
+新增的 `SvgaLoadingFragmentTest` 覆盖 7 秒计时、取消任务、解析失败、无效播放参数、迟到回调、后台恢复、系统动画关闭，
+并用真实资源与 Native Canvas 检查不同帧的像素变化；`SvgaLoadingSmokeTest` 用于连接设备后的入口、播放和生命周期冒烟。
+JVM Native Canvas 绘制检查不替代真机、模拟器或 R8 Release 的实际运行验收。
+
+SVGA 接入验证记录（2026-10-11；本次提交验证见[修改日志](CHANGELOG.md)）：示例 54 项、库 127 项 JVM / Robolectric 测试共 181 项通过，无失败、错误或跳过；
+新增 SVGA 用例在 API 26 / 34 共执行 18 项，包含真实资源解析和 Native Canvas 帧像素检查。
+Debug、R8 Release、AndroidTest APK 均组装通过；Debug / Release Lint 均为 0 Error / 58 Warning，
+其中本页新增 1 项 Overdraw、4 项 ButtonStyle，沿用现有示例背景与按钮样式，没有整体屏蔽警告。
+新增 7 个依赖校验附件已与 JitPack / Maven Central 文件核对，库运行依赖图没有 SVGA 或 Wire。
+已生成调试密钥签名的 `build/svga-implementation/sample-release-validation.apk`，v2 / v3 验签通过，仅供本地验证。
+设备任务已尝试，但因 `No connected devices!` 未执行；设备冒烟、R8 Release 实际运行、TalkBack 和内存场景仍需补验。
+
+[官方 SVGA Android 仓库](https://github.com/svga/SVGAPlayer-Android)已归档并停止维护。本示例固定使用 2.6.1，
+新项目接入仍需核对实际依赖解析和 Release 运行表现。
+
 ## 状态时序
 
 ### requestedState vs renderedState
@@ -488,6 +541,20 @@ fun diagnostics(): StateLayoutDiagnostics
    重新打开本工程，执行 `File > Sync Project with Gradle Files`，同步完成后选择 `sample` 运行配置再构建。
    命令行构建通过不能代替 IDE 同步结果；如仍出现请 clean 后重建。
 
+## 示例沉浸式系统栏
+
+示例应用在 `MainActivity` 中调用 `enableEdgeToEdge()`，系统栏图标随日夜主题调整；
+横屏允许绘制进入刘海区，内容安全区域由 `sample/src/main/java/com/sfyc/demo/insets/DemoInsets.kt` 处理。
+
+- 首页仅对 `demoHomeContent` 添加 padding；详情由各 Fragment 根 View 单独处理，避免两层 Insets 叠加。
+- `applyDemoSystemBarPadding()` 保留 XML 原始 padding，叠加 `systemBars` 与 `displayCutout`；重复分发 Insets 时始终以初始 padding 计算。
+- 顶部、底部和两侧可分别关闭；监听器返回原始 Insets，不消费后代 Insets。
+- 网络示例只在外层根 View 处理，SmartRefreshLayout 和 StateSkeletonLayout 内部不再重复添加。
+- 本次适配仅在 `sample` 中实现；示例没有输入框，未处理 IME Insets。
+
+`DemoInsetsTest` 覆盖原始 padding 的保留和方向开关。设备验收应检查横竖屏、刘海、手势导航、
+三键导航和日夜模式下，标题、状态按钮及列表内容是否被系统栏遮挡。
+
 ## 工程结构与测试
 
 ```text
@@ -505,7 +572,7 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 │  ├─ src/debug/res/layout/            # 测试夹具（不进 Release AAR）
 │  ├─ src/test/                        # JVM：协调器时序 + 配置校验 + Robolectric View 测试
 │  └─ src/androidTest/                 # 真机：切换/触摸/无障碍/detach 恢复
-└─ sample/                              # :sample（15 个示例页，源码包 com.sfyc.demo）
+└─ sample/                              # :sample（16 个示例页，源码包 com.sfyc.demo）
 ```
 
 ```powershell
@@ -525,6 +592,17 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 # 有设备时：
 .\gradlew.bat :stateskeletonlayout:connectedDebugAndroidTest
 .\gradlew.bat :sample:connectedDebugAndroidTest
+```
+
+示例目录通过 Fragment 回退栈关闭详情。预测性返回提交或取消后，`MainActivity` 在下一轮主线程同步详情容器可见性；
+回退栈为空时，详情容器必须为 `GONE`，避免空容器的全屏背景遮挡目录。
+`MainActivityNavigationTest` 覆盖普通返回、预测性返回、取消返回和前后台切换；
+`DemoSmokeTest` 在设备上覆盖全部示例返回、取消返回和重建后再次进入。
+
+```powershell
+# 首页导航回归
+.\gradlew.bat :sample:testDebugUnitTest --tests com.sfyc.demo.MainActivityNavigationTest
+.\gradlew.bat :sample:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.sfyc.demo.DemoSmokeTest
 ```
 
 本轮模块与包名迁移验证（2026-10-01）：
@@ -565,7 +643,7 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 
 ## 网络多类型示例
 
-首页进入第 15 项「网络多类型」。刷新区域按 SmartRefreshLayout → StateSkeletonLayout →
+首页进入「网络多类型」。刷新区域按 SmartRefreshLayout → StateSkeletonLayout →
 EpoxyRecyclerView 组合：首屏使用模板骨架，下拉刷新与上拉分页保留已有内容。
 网络使用本地 `delay` 模拟，不需要服务端、联网权限或图片加载库。
 
@@ -636,5 +714,5 @@ GitHub 仓库包含库、示例、测试、Gradle Wrapper 与 CI；本机 SDK �
 ## 参考与许可
 
 - 设计思路参考 Drakeet StateLayout（https://github.com/Drakeet/StateLayout）与 Faltenreich SkeletonLayout（https://github.com/Faltenreich/SkeletonLayout），未复制其源代码，两者均为 Apache-2.0。
-- 库模块显式依赖 AndroidX Annotation（Apache-2.0），另有 Kotlin 标准库（Apache-2.0）；示例模块另用 AppCompat / Material / RecyclerView / Lifecycle / Lottie / SmartRefreshLayout / Epoxy / Coroutines 等，均为 Apache-2.0（Checker Qual 为 MIT），仅供示例演示。
+- 库模块显式依赖 AndroidX Annotation（Apache-2.0），另有 Kotlin 标准库（Apache-2.0）；示例模块另用 AppCompat / Material / RecyclerView / Lifecycle / Lottie / SVGAPlayer-Android / SmartRefreshLayout / Epoxy / Coroutines 等，均为 Apache-2.0（Checker Qual 为 MIT），仅供示例演示。
 - 本工程采用 Apache License 2.0，见根目录 `LICENSE`。

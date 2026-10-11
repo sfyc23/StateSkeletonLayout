@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import com.sfyc.ssl.StateSkeletonLayout
 import com.sfyc.ssl.StateSkeletonLayoutDefaults
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.databinding.FragmentDefaultsGlobalBinding
 
 /**
@@ -33,6 +34,7 @@ class GlobalDefaultsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.applyDemoSystemBarPadding()
         log = DemoLog(binding.demoLog)
         binding.demoConfigSummary.text = "fullOverride\n" + DemoSslDefaults.describe(DemoSslDefaults.fullOverride)
 

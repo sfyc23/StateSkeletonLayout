@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.R
 import com.sfyc.demo.ssl.databinding.FragmentRecyclerBinding
 import kotlinx.coroutines.Job
@@ -41,6 +42,7 @@ class RecyclerSkeletonFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.applyDemoSystemBarPadding()
         log = DemoLog(binding.demoLog)
         binding.demoContentList.layoutManager = LinearLayoutManager(requireContext())
         binding.demoContentList.adapter = ProfileRowAdapter()

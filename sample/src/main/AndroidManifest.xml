@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:name="com.sfyc.demo.DemoApplication"
@@ -9,7 +10,8 @@
         android:icon="@mipmap/demo_ic_launcher"
         android:label="@string/demo_app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.StateSkeletonDemo">
+        android:theme="@style/Theme.StateSkeletonDemo"
+        tools:replace="android:allowBackup,android:label">
         <activity
             android:name="com.sfyc.demo.MainActivity"
             android:exported="true">

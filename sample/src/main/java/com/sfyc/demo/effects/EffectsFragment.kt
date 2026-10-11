@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import com.sfyc.ssl.SkeletonDirection
 import com.sfyc.ssl.SkeletonEffect
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.databinding.FragmentEffectsBinding
 
 /**
@@ -30,6 +31,7 @@ class EffectsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.applyDemoSystemBarPadding()
         log = DemoLog(binding.demoLog)
         val state = binding.demoState
         state.setOnRenderedStateChangedListener { _, old, new, _ ->

@@ -9,6 +9,7 @@
     tools:context="com.sfyc.demo.MainActivity">
 
     <LinearLayout
+        android:id="@+id/demo_home_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"

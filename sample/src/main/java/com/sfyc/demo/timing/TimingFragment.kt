@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.sfyc.ssl.StateLayoutState
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.databinding.FragmentTimingBinding
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -39,6 +40,7 @@ class TimingFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.applyDemoSystemBarPadding()
         log = DemoLog(binding.demoLog)
         binding.demoState.setOnRenderedStateChangedListener { _, old, new, _ ->
             if (new == StateLayoutState.LOADING) skeletonShown = true

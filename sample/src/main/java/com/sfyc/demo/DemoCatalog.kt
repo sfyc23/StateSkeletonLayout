@@ -14,6 +14,7 @@ import com.sfyc.demo.lottie.LottieLoadingFragment
 import com.sfyc.demo.network.FeedDemoFragment
 import com.sfyc.demo.rapid.RapidStateFragment
 import com.sfyc.demo.recycler.RecyclerSkeletonFragment
+import com.sfyc.demo.svga.SvgaLoadingFragment
 import com.sfyc.demo.template.TemplateFragment
 import com.sfyc.demo.timing.TimingFragment
 
@@ -35,6 +36,7 @@ object DemoCatalog {
         Entry("骨架效果", "Solid / Shimmer / Pulse 及运行时配置切换", ::EffectsFragment),
         Entry("列表骨架", "Linear 与 Grid 列表使用模板骨架，不替换 Adapter", ::RecyclerSkeletonFragment),
         Entry("Lottie 加载", "自定义加载布局 + 状态回调启停 Lottie", ::LottieLoadingFragment),
+        Entry("SVGA 加载", "本地 SVGA 自定义加载布局，演示状态切换与生命周期启停", ::SvgaLoadingFragment),
         Entry("快速请求", "100ms / 500ms / 1500ms 模拟结果，展示延迟与最短展示规则", ::TimingFragment),
         Entry("连续状态", "Loading 后快速提交多个结果，验证最新状态优先", ::RapidStateFragment),
         Entry("生命周期", "切后台、切页面、旋转设备后的动画停止与恢复", ::LifecycleDemoFragment),

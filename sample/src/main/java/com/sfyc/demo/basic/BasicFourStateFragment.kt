@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.sfyc.ssl.StateLayoutState
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.R
 import com.sfyc.demo.ssl.databinding.FragmentBasicBinding
 
@@ -31,6 +32,7 @@ class BasicFourStateFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.applyDemoSystemBarPadding()
         log = DemoLog(binding.demoLog)
         val state = binding.demoState
         state.setOnRenderedStateChangedListener { _, old, new, _ ->

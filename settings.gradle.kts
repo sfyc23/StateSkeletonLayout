@@ -30,5 +30,11 @@ dependencyResolutionManagement {
         maven(url = uri("https://maven.aliyun.com/repository/gradle-plugin"))
         maven(url = uri("https://maven.aliyun.com/repository/google"))
         maven(url = uri("https://maven.aliyun.com/repository/public"))
+        // SVGA 仅供 sample 演示，限制仓库范围，其他依赖仍走原有仓库。
+        maven(url = uri("https://jitpack.io")) {
+            content {
+                includeGroup("com.github.yyued")
+            }
+        }
     }
 }

@@ -24,6 +24,7 @@ import com.sfyc.ssl.SkeletonNodeConfig
 import com.sfyc.ssl.SkeletonShape
 import com.sfyc.ssl.StateLayoutState
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.R
 import com.sfyc.demo.ssl.databinding.FragmentNetworkFeedBinding
 import com.sfyc.demo.network.models.CarouselScrollStore
@@ -80,6 +81,8 @@ class FeedDemoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // 外层根整体垫高；SmartRefresh / StateSkeletonLayout 内部不再重复垫，避免双重叠加。
+        view.applyDemoSystemBarPadding()
         val b = checkNotNull(binding)
         log = DemoLog(b.controls.demoLog)
         submittedVersion = -1L

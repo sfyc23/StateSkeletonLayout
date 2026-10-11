@@ -12,6 +12,7 @@ import com.sfyc.ssl.SslGlobalDefaults
 import com.sfyc.ssl.StateSkeletonLayout
 import com.sfyc.ssl.StateSkeletonLayoutDefaults
 import com.sfyc.demo.DemoLog
+import com.sfyc.demo.insets.applyDemoSystemBarPadding
 import com.sfyc.demo.ssl.R
 import com.sfyc.demo.ssl.databinding.FragmentDefaultsPriorityBinding
 
@@ -40,6 +41,7 @@ class PriorityChainFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.applyDemoSystemBarPadding()
         log = DemoLog(binding.demoLog)
         binding.demoCompare.text = LEGEND
         recreateXmlProbe()

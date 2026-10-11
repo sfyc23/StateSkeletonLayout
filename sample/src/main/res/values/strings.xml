@@ -63,6 +63,17 @@
     <string name="demo_lottie_hint">自定义加载布局中的 Lottie 由页面在状态回调中成对启停，库不感知 Lottie</string>
     <string name="demo_lottie_state">Lottie 状态：%1$s</string>
 
+    <string name="demo_svga_hint">本地 loading.svga 用于自定义加载页；进入页面自动模拟 7 秒，也可持续 Loading 或手动切换四态。</string>
+    <string name="demo_svga_simulate">模拟加载（7 秒）</string>
+    <string name="demo_svga_status">资源：%1$s · 动画：%2$s · 页面：%3$s</string>
+    <string name="demo_svga_idle">未解析</string>
+    <string name="demo_svga_parsing">解析中</string>
+    <string name="demo_svga_ready">已就绪</string>
+    <string name="demo_svga_failed">解析失败</string>
+    <string name="demo_svga_playing">播放</string>
+    <string name="demo_svga_stopped">停止</string>
+    <string name="demo_svga_static">系统动画关闭，使用静态文案</string>
+
     <string name="demo_timing_hint">显示延迟 150ms、最短展示 600ms；观察 100ms 请求跳过骨架的现象</string>
     <string name="demo_timing_100">模拟 100ms 请求</string>
     <string name="demo_timing_500">模拟 500ms 请求</string>

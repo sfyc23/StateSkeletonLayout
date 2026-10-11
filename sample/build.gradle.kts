@@ -1,5 +1,5 @@
 // :sample —— 控件的可运行说明书，仅依赖库模块，不被库模块反向依赖。
-// Lottie 只允许出现在本模块，用于演示自定义加载布局。
+// Lottie / SVGA 只允许出现在本模块，用于演示自定义加载布局。
 plugins {
     alias(libs.plugins.agp.application)
     alias(libs.plugins.kotlin.android)
@@ -71,6 +71,10 @@ dependencies {
     implementation(libs.activity.ktx)
     // 仅示例使用：自定义加载布局示例的依赖严禁进入库模块。
     implementation(libs.lottie)
+    implementation(libs.svga.player) {
+        // SVGA 制品未引用旧扩展运行库；移除它与现有 Parcelize 的重复类。
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-android-extensions-runtime")
+    }
     // 网络多类型示例的依赖只进入 sample。
     implementation(libs.smartrefresh.kernel)
     implementation(libs.smartrefresh.header.classics)
