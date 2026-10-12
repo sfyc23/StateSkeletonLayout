@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 状态页替换测试夹具：与原布局共享重试 ID，但使用不同的布局资源。 -->
+<Button xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@id/ssl_test_retry"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:text="@string/ssl_builtin_retry" />

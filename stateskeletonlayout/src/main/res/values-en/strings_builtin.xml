@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 库内置空态 / 错误态布局的文案（英文）。 -->
+    <string name="ssl_builtin_empty_message">No content</string>
+    <string name="ssl_builtin_error_message">Failed to load. Please retry.</string>
+    <string name="ssl_builtin_retry">Retry</string>
+</resources>

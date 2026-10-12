@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  整屏列表骨架模板的一行：圆形头像 + 两条文字条，全部为固定尺寸的占位 View。
+
+  与 item_skeleton_row 的区别：头像用形状资源表达圆形（骨架收集叶子 View 的
+  外接矩形，圆形在这里只是让模板自身与真实头像视觉一致），尺寸与其他行一致。
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/demo_avatar_circle" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="160dp"
+            android:layout_height="16dp"
+            android:background="@color/demo_avatar_placeholder" />
+
+        <View
+            android:layout_width="220dp"
+            android:layout_height="12dp"
+            android:layout_marginTop="6dp"
+            android:background="@color/demo_avatar_placeholder" />
+
+    </LinearLayout>
+
+</LinearLayout>

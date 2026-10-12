@@ -46,6 +46,9 @@ keystore.properties
 # ---------- 5. 操作系统与临时文件 ----------
 # macOS 文件夹属性缓存
 .DS_Store
+# Windows 工具崩溃转储（如 grep.exe.stackdump），避免 git add -A 误入库
+*.stackdump
+*.dmp
 
 # ---------- 6. 项目私有文档（过程稿，不随源码发布） ----------
 # 内部设计 / 方案 / 验证记录等过程文档

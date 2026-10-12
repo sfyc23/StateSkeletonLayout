@@ -5,7 +5,7 @@
 A 2-in-1 Android View widget combining page state management (Content / Loading / Empty / Error) and skeleton loading (Solid / Shimmer / Pulse). Pages only submit target states declaratively without directly coordinating state view visibility, skeleton animations, minimum display durations, or animation lifecycles.
 
 - Library module: `:stateskeletonlayout` (namespace `com.sfyc.ssl`)
-- Sample application: `:sample` (source package `com.sfyc.demo`, namespace / applicationId `com.sfyc.demo.ssl`, 16 demo screens)
+- Sample application: `:sample` (source package `com.sfyc.demo`, namespace / applicationId `com.sfyc.demo.ssl`, 20 demo screens)
 - UI: Android View System + XML + ViewBinding; Jetpack Compose is not introduced
 - Environment: Kotlin 2.2.10, AGP 8.13.2, Gradle 8.14, `compileSdk` / `targetSdk` 36, `minSdk` 26, JVM 17
 - Library explicit dependencies: AndroidX Annotation only (no Core, Lottie, SVGA, Material, Navigation, or Lifecycle); Kotlin standard library is added automatically by the Kotlin plugin
@@ -16,9 +16,9 @@ Callers of the original module and legacy package need to update dependencies, i
 
 ## Installation
 
-### JitPack (0.0.1)
+### JitPack (0.0.2)
 
-This project publishes Release AAR and source artifacts of the library module via JitPack. The sample app is not included in the published artifacts.
+This project publishes the library module's Release AAR, source jar, and API documentation jar via JitPack. The sample app is not included in the published artifacts.
 Add the repository in the host project's `settings.gradle.kts`:
 
 ```kotlin
@@ -39,12 +39,15 @@ Then add the dependency in the app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.1")
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.2")
 }
 ```
 
-See the [JitPack Project Page](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.1) for build status and logs.
+See the [JitPack Project Page](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.2) for build status and logs.
 JitPack builds artifacts on the first request for a version; dependencies can only be resolved after the build succeeds.
+
+When upgrading from `0.0.1`, recompile the app and any libraries that use `SslGlobalDefaults` or `StateLayoutDiagnostics`.
+New fields in these public data classes change their JVM constructor and `copy` signatures; precompiled AARs may require updated builds. See the [changelog](CHANGELOG.md).
 
 ### Local Module
 
@@ -139,6 +142,73 @@ layout.retryClicksEnabled = !uiState.isRetrying
 
 Programmatic instances apply the initial state upon first attachment, allowing layout resources to be configured beforehand; an explicit `render` prior to attachment takes precedence over the initial state.
 
+### 5. Works Without Configuring State Pages (Built-in Fallback Layouts)
+
+`EMPTY` / `ERROR` layouts **no longer throw when left unconfigured**; they fall back to the library's
+built-in pages: a single centered line of text, plus a retry button on the error page. A minimal
+integration only needs the business content itself:
+
+```xml
+<com.sfyc.ssl.StateSkeletonLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_useSkeleton="true">
+
+    <include layout="@layout/content_profile" />
+
+</com.sfyc.ssl.StateSkeletonLayout>
+```
+
+The built-in error page ships with a retry button. When `ssl_errorRetryViewId` is not set explicitly,
+the widget adopts that button as the unified retry entry point — no extra configuration needed. The
+built-in layout's IDs are public, so you can replace the text:
+
+```kotlin
+// IDs of the library's built-in layout (declared in the library's ids.xml, referenceable directly).
+com.sfyc.ssl.R.id.ssl_builtin_state_root     // Root LinearLayout
+com.sfyc.ssl.R.id.ssl_builtin_state_message  // Message TextView
+com.sfyc.ssl.R.id.ssl_builtin_state_retry    // Retry button (error page only)
+
+layout.setStateDescription(StateLayoutState.ERROR, "Network unavailable")
+// Or change the text directly: obtain the root node, then look up the inner widget
+layout.getStateView(StateLayoutState.ERROR)
+    ?.findViewById<TextView>(com.sfyc.ssl.R.id.ssl_builtin_state_message)
+    ?.text = "Network unavailable, please check your connection"
+
+// Projects that want missing configuration to fail fast can disable the fallback:
+StateSkeletonLayoutDefaults.install(SslGlobalDefaults(useBuiltInStateLayouts = false))
+```
+
+The built-in strings are `ssl_builtin_empty_message` / `ssl_builtin_error_message` / `ssl_builtin_retry`
+(one set per locale); hosts can override them with resources of the same name. The built-in layouts use
+only `android:*` attributes and **introduce no Material / AppCompat dependency**.
+
+### 6. Using It with Jetpack Compose
+
+The library itself **pulls in no Compose dependency** and ships no Compose artifact; wrap it with
+`AndroidView` inside a Compose screen:
+
+```kotlin
+@Composable
+fun ProfileScreen(state: StateLayoutState, content: @Composable () -> Unit) {
+    val holder = remember { mutableStateOf<StateSkeletonLayout?>(null) }
+    AndroidView(
+        factory = { context ->
+            StateSkeletonLayout(context).apply {
+                addView(ComposeView(context).apply { /* or an XML layout */ })
+                holder.value = this
+            }
+        },
+        modifier = Modifier.fillMaxSize(),
+    )
+    LaunchedEffect(state) { holder.value?.render(state) }
+}
+```
+
+Two things to watch: `StateSkeletonLayout` requires exactly one business content child View; when that
+child is a `ComposeView`, content-based shape extraction can only see the `ComposeView` layer itself,
+so **use template extraction if you want a skeleton** (`ssl_skeletonSource="template"`).
+
 ## Global Design Defaults
 
 Install once, and all new instances inherit automatically; XML attributes and runtime setters can override individual properties.
@@ -230,6 +300,24 @@ app:ssl_skeletonSource="template"
 app:ssl_skeletonTemplate="@layout/skeleton_list_template"
 ```
 
+**For list skeletons, prefer one instance covering the whole screen rather than one
+`StateSkeletonLayout` per item.**
+
+Two reasons, both of which still hold after the recent rework:
+
+- **Mask memory**: each instance holds one `ALPHA_8` mask Bitmap as large as itself for its whole
+  lifetime. Twenty item-level instances means twenty masks resident at once.
+- **Animation cost**: the library now drives skeleton animation from a **process-level shared clock**
+  (N instances drive one `ValueAnimator`, one main-thread callback per frame), so this cost is no
+  longer multiplied by N — but the mask is still one per instance.
+
+A full-screen template is therefore currently the only approach that preserves both memory and frame
+rate: place around eight static placeholder rows in the template. It does not continue as you scroll
+(that is the "infinite list skeleton" territory, not supported yet).
+
+If you genuinely need item-level skeletons, measure the real footprint first via `diagnostics()`'
+`maskBytes` / `maskBuildCount`, then decide on a scale limit.
+
 When switching span counts, update the template and refresh synchronously:
 
 ```kotlin
@@ -238,6 +326,27 @@ stateLayout.skeletonConfig = stateLayout.skeletonConfig.copy(
 )
 stateLayout.invalidateSkeleton()
 ```
+
+### Configuration Changes (Dark Mode / Font Scale / Locale / RTL)
+
+The widget overrides `onConfigurationChanged` and handles the following automatically:
+
+- **Skeleton colors and corner radius**: only when they **still equal the values last resolved from
+  resources** (that is, the host never overrode them explicitly) are they re-resolved from
+  `ssl_mask_default` / `ssl_highlight_default` / `ssl_corner_radius_default` under the new
+  Configuration. If the host set any of them via XML / Global / setter, they are left untouched —
+  brand colors won't be displaced by resource defaults.
+- **State page cache**: all three states' caches are cleared, and the currently rendered state page is
+  rebuilt immediately under the new Configuration (state pages may carry fixed dp dimensions and static
+  text). Layout resource declarations are preserved.
+- **Skeleton template**: the renderer decides for itself whether to re-inflate, based on
+  `configuration.hashCode()`.
+- **RTL shimmer**: `SkeletonOverlayView.onRtlPropertiesChanged` rebuilds the shader and invalidates the
+  mask.
+
+If your Activity declares `android:configChanges` and thus does not recreate Views, the logic above
+applies; if it does not, the View is recreated and the Configuration is naturally read by a new
+instance. Neither case requires extra work from the business code.
 
 ### Updating Configuration at Runtime
 
@@ -350,7 +459,7 @@ JVM Native Canvas draw checks do not substitute for on-device, emulator, or R8 R
 SVGA integration verification record (2026-10-11; see the [changelog](CHANGELOG.md) for verification of this commit): 54 sample tests and 127 library JVM / Robolectric tests (total 181) passed with 0 failures, errors, or skips; 18 new SVGA test cases executed on API 26 / 34, including real asset parsing and Native Canvas frame pixel verification.
 Debug, R8 Release, and AndroidTest APKs all assembled successfully; Debug / Release Lint reports 0 Errors / 58 Warnings, where this screen adds 1 Overdraw and 4 ButtonStyle warnings, following existing sample backgrounds and button styles without globally suppressing warnings.
 7 new dependency verification attachments were checked against JitPack / Maven Central files; the library runtime dependency graph contains neither SVGA nor Wire.
-A debug-keystore-signed `build/svga-implementation/sample-release-validation.apk` passed v2 / v3 signature verification for local verification only.
+A debug-keystore-signed `build/svga-implementation/sample-release-validation.apk` passed v2 / v3 signature verification for local verification only. Note: that APK is a **manually signed, out-of-repo artifact**; this repository contains no `signingConfig` or keystore. A standard Release APK built with the commands in the Versioning section is always **unsigned** — do not conflate the two.
 Device tasks were attempted but skipped due to `No connected devices!`; device smoke tests, R8 Release runtime checks, TalkBack, and memory scenarios still require manual follow-up.
 
 The [official SVGA Android repository](https://github.com/svga/SVGAPlayer-Android) has been archived and is no longer maintained. This sample pins version 2.6.1; new project integrations still need to verify actual dependency resolution and Release runtime performance.
@@ -398,8 +507,8 @@ Priority: Built-in < Theme Defaults < Global Config < XML Explicit Style < XML D
 | Attribute | Format / Enum | Default | Precondition / Error Behavior |
 | --- | --- | --- | --- |
 | `ssl_initialState` | `content`, `loading`, `empty`, `error` | `content` | Initial request enters real rendering pipeline; rendered advances only after skeleton is ready |
-| `ssl_emptyLayout` | reference | None | Throws exception (naming the attribute) if requesting EMPTY without configuration |
-| `ssl_errorLayout` | reference | None | Throws exception if requesting ERROR without configuration |
+| `ssl_emptyLayout` | reference | None (falls back to the built-in empty page) | Uses the built-in fallback page when unconfigured, no exception; with `useBuiltInStateLayouts=false` it throws, naming the attribute |
+| `ssl_errorLayout` | reference | None (falls back to the built-in error page) | Uses the built-in fallback page when unconfigured, with its retry button auto-adopted as the unified retry entry point |
 | `ssl_loadingLayout` | reference | None | Warns and falls back to skeleton if unconfigured when `useSkeleton=false` (default) |
 | `ssl_useSkeleton` | boolean | `false` | `true` = skeleton, `false` = custom layout |
 | `ssl_skeletonSource` | `content`, `template` | `content` | — |
@@ -431,6 +540,11 @@ Theme Attribute `ssl_stateSkeletonLayoutStyle` points to a Style as a helper lay
 StateSkeletonLayoutDefaults.install(SslGlobalDefaults(...))
 StateSkeletonLayoutDefaults.reset()       // For test isolation
 
+// Instance-level batch configuration (programmatic creation path; equivalent to
+// individual setters, null fields are skipped)
+layout.applyOptions(SslLayoutOptions(emptyLayoutResId = ..., errorLayoutResId = ...))
+SslLayoutOptions.skeleton(emptyLayoutResId, errorLayoutResId)  // Convenience factory for the common combo
+
 val requestedState: StateLayoutState      // Latest requested state (read-only)
 val renderedState: StateLayoutState       // Currently rendered state (read-only)
 var useSkeleton: Boolean                // true=skeleton, false=custom layout, default false
@@ -455,11 +569,15 @@ fun setOnLoadingVisibilityChangedListener(listener)
 fun setOnStateViewReleasedListener(listener)
 fun getStateView(state): View?            // Query cache only; skeleton returns decorative layer
 fun updateStateView(state, update)         // Explicit create / bind, does not switch state
-fun clearStateViewCache(state)             // Can only release non-current states
+fun clearStateViewCache(state)             // Non-current states only, and never a View mid-transition
 fun setSkeletonNodeConfig(viewId, config)  // null removes rule
 fun setStateDescription(state, description)
-fun diagnostics(): StateLayoutDiagnostics
+fun diagnostics(): StateLayoutDiagnostics  // Includes the inStateViewTransaction flag
 ```
+
+Public default-value constants (the single source of truth, kept in sync with the XML attribute table):
+`DEFAULT_TRANSITION_DURATION_MILLIS`, `DEFAULT_RETRY_CLICK_THROTTLE_MILLIS`,
+`DEFAULT_LOADING_SHOW_DELAY_MILLIS`, `DEFAULT_MINIMUM_LOADING_DURATION_MILLIS`.
 
 The runtime setters, state layout configurations, and listener registrations above are UI APIs and must only be called on the main thread; calling from a background thread yields a consistent `IllegalStateException`.
 
@@ -504,8 +622,8 @@ The runtime setters, state layout configurations, and listener registrations abo
    Set `ssl_transitionEffect="none"` (or `transitionEffect = NONE` at runtime); automatically treated as NONE when system animations are turned off.
 7. **How to change state layouts at runtime?**
    Call `setStateViewLayout(EMPTY, R.layout.…)`; the old View is removed and re-inflated upon next rendering; if currently rendering that state, it is immediately rebuilt without transition animations.
-8. **Why does requesting an unconfigured state throw an exception?**
-   Intentional design: failing fast is better than a non-responsive blank screen; exception messages include the missing attribute name (e.g., `ssl_emptyLayout`), which can be fixed accordingly.
+8. **What happens when I request a state page I never configured?**
+   By default it **falls back to the library's built-in page** (centered text; the error page carries its own retry button) and no longer throws. The built-in pages are deliberately minimal, so if you have your own design spec, override them via `ssl_emptyLayout` / `ssl_errorLayout`. If you would rather have missing configuration **fail fast**, install `SslGlobalDefaults(useBuiltInStateLayouts = false)` — the exception message then names the missing attribute (e.g. `ssl_emptyLayout`).
 9. **Why does Android Studio report "Can't find module entity for StateSkeletonLayout.StateSkeletonLayout" after module migration?**
    This indicates the IDE is still using legacy module identifiers when importing the project structure.
    Reopen the project, run `File > Sync Project with Gradle Files`, and select the `sample` run configuration once synchronization completes.
@@ -532,18 +650,27 @@ display cutouts, gesture and three-button navigation, and day/night themes, chec
 StateSkeletonLayout/                    # Workspace directory retained; Gradle root project named stateskeletonlayout
 ├─ settings.gradle.kts / build.gradle.kts / gradle.properties
 ├─ gradle/libs.versions.toml            # Pinned versions, no dynamic versions
+├─ gradle/verification-metadata.xml     # SHA-256 verification for every dependency
 ├─ stateskeletonlayout/                 # :stateskeletonlayout (Library)
+│  ├─ api/stateskeletonlayout.api       # Public API baseline (checked by apiCheck)
+│  ├─ consumer-rules.pro                # Intentionally empty, see below
 │  ├─ src/main/java/com/sfyc/ssl/
 │  │  ├─ StateSkeletonLayout.kt         # Sole public container
+│  │  ├─ SslLayoutOptions.kt            # Instance-level batch configuration snapshot
 │  │  ├─ StateLayoutState / SkeletonSource /
 │  │  │   SkeletonEffect / SkeletonDirection / SkeletonConfig /
 │  │  │   StateTransitionEffect / SkeletonNodeConfig / 4 listeners / diagnostic snapshot
 │  │  └─ internal/                      # Coordinator/Registry/Renderer/Mask/Clock (Internal)
-│  ├─ src/main/res/values/             # attrs/colors/dimens/strings/styles
+│  │     ├─ TransitionController.kt     # State transition animation (incl. cancellation semantics)
+│  │     ├─ SslDefaultValues.kt         # Single source of truth for defaults
+│  │     └─ skeleton/SkeletonTicker.kt  # Process-level shared animation clock
+│  ├─ src/main/res/values/             # attrs/colors/dimens/strings/styles/ids
+│  ├─ src/main/res/layout/             # Built-in empty / error fallback layouts
 │  ├─ src/debug/res/layout/            # Test fixtures (not packaged into Release AAR)
-│  ├─ src/test/                        # JVM: Coordinator timing + config validation + Robolectric View tests
+│  ├─ src/test/                        # JVM: timing + config + default consistency + SavedState round-trip + screenshot regression
+│  ├─ src/test/screenshots/            # Roborazzi screenshot baselines (must be committed)
 │  └─ src/androidTest/                 # Device: Switching/touch/accessibility/detach restoration
-└─ sample/                              # :sample (16 demo screens, source package com.sfyc.demo)
+└─ sample/                              # :sample (20 demo screens, source package com.sfyc.demo)
 ```
 
 ```powershell
@@ -584,7 +711,7 @@ Module and package name migration verification round (2026-10-01):
 - Both modules assembled Debug / Release and AndroidTest APKs successfully; sample Release completed R8 shrinking; standard Release APK remains unsigned.
 - Public AAR classes, ViewBinding, six Epoxy generated models, and sample / test Manifests were verified with new package names.
 - Device tests were attempted and reported `No online devices found` due to unauthorized ADB or unavailable emulators, and were not executed.
-  15 demo screens, rotation recovery, R8 Release startup, etc., still require device follow-up.
+  There were 15 demo screens at that point (later 16, currently 20); rotation recovery, R8 Release startup, etc., still require device follow-up.
 
 Historical records below represent pre-migration states; legacy task names and artifact paths are retained as-is and do not serve as proof for the current verification round.
 
@@ -635,24 +762,48 @@ Network sample pre-migration verification (2026-10-01):
 
 ## Release Process
 
+### About `consumer-rules.pro` (R8 / Obfuscation)
+
+`stateskeletonlayout/consumer-rules.pro` is passed through to the host with the Release AAR. It contains
+**only comments and no keep rules at all**, and that is deliberate:
+
+- Custom Views used from XML (`<com.sfyc.ssl.StateSkeletonLayout>`) get precise keep rules generated
+  automatically by the Android Gradle Plugin — none need to be written by hand.
+- Public APIs called directly from Kotlin / Java are retained by R8's reachability analysis.
+- Wildcard rules like `public *` would keep a large amount of code that is actually never used, masking
+  real shrinking problems. The `:sample` Release build with `minifyEnabled = true` serves as the
+  consumer-side regression.
+
+**Exception**: if your project uses this widget **only via reflection or dynamic class names** (a
+configuration-driven page framework, for instance), AGP cannot infer the reference and you need to add
+rules yourself:
+
+```proguard
+-keep class com.sfyc.ssl.StateSkeletonLayout { public *; }
+-keep class com.sfyc.ssl.SkeletonConfig { public *; }
+-keep class com.sfyc.ssl.SslLayoutOptions { public *; }
+```
+
+### Release Steps
+
 The version number is centrally maintained in `gradle.properties` under `libraryVersion`; both library POM and sample app read the same value.
-Current version is `0.0.1`, and Git tags also use `0.0.1` (without `v` prefix).
+Current version is `0.0.2`, and Git tags also use `0.0.2` (without `v` prefix).
 
 1. After updating the version, run library and sample tests, Lint, Release builds, and verify local Maven publication:
 
    ```powershell
-   .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
+   .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:verifyRoborazziDebug :stateskeletonlayout:apiCheck :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
    ```
 
 2. Commit and push source code, then create and push a version tag matching `libraryVersion`:
 
    ```powershell
    git push origin main
-   git tag -a 0.0.1 -m "Release 0.0.1"
-   git push origin 0.0.1
+   git tag -a 0.0.2 -m "Release 0.0.2"
+   git push origin 0.0.2
    ```
 
-3. Select the version on the JitPack project page and trigger a build, inspecting status and logs; verify POM, AAR, and source artifacts upon success.
+3. Create a GitHub Release for the tag, then request a build on the JitPack project page and inspect its status and logs; verify the POM, AAR, source jar, and API documentation jar after the build succeeds.
 
 JitPack runs Java 17 and invokes the library Maven publication task via `jitpack.yml` in the root directory.
 Publications use Maven POM and standard `-sources.jar`; to maintain compatibility with JitPack's source file handling, Gradle `.module` metadata is not published.
@@ -672,6 +823,6 @@ Published tags must remain immutable; subsequent changes must use a new version 
 
 ## References and License
 
-- Design concepts reference Drakeet StateLayout (https://github.com/Drakeet/StateLayout) and Faltenreich SkeletonLayout (https://github.com/Faltenreich/SkeletonLayout); no source code was copied; both are Apache-2.0.
+- Thanks to [liangjingkanji/StateLayout](https://github.com/liangjingkanji/StateLayout) and [Faltenreich/SkeletonLayout](https://github.com/Faltenreich/SkeletonLayout) for inspiring this project's design.
 - The library module explicitly depends on AndroidX Annotation (Apache-2.0) and the Kotlin standard library (Apache-2.0); the sample module additionally uses AppCompat / Material / RecyclerView / Lifecycle / Lottie / SVGAPlayer-Android / SmartRefreshLayout / Epoxy / Coroutines, etc., all Apache-2.0 (Checker Qual is MIT), for demonstration purposes only.
 - This project is licensed under the Apache License 2.0; see `LICENSE` in the root directory.

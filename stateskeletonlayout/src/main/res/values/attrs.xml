@@ -11,9 +11,10 @@
             <enum name="empty" value="2" />
             <enum name="error" value="3" />
         </attr>
-        <!-- 空内容页布局。请求 EMPTY 却未配置时会抛异常，不显示空白页。 -->
+        <!-- 空内容页布局。未配置时回退库内置空态页，不抛异常、不显示空白。
+             需要"缺配置立即暴露"可用 SslGlobalDefaults(useBuiltInStateLayouts = false) 恢复严格失败。 -->
         <attr name="ssl_emptyLayout" format="reference" />
-        <!-- 错误页布局。请求 ERROR 却未配置时会抛异常。 -->
+        <!-- 错误页布局。未配置时回退库内置错误页（自带重试按钮，会被自动接管为统一重试入口）。 -->
         <attr name="ssl_errorLayout" format="reference" />
         <!-- 自定义加载布局。useSkeleton 为 false（默认）时必填；未配置会自动回退到骨架并打警告。 -->
         <attr name="ssl_loadingLayout" format="reference" />

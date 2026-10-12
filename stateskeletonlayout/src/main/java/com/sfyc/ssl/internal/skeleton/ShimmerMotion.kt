@@ -1,5 +1,6 @@
 package com.sfyc.ssl.internal.skeleton
 
+import androidx.annotation.VisibleForTesting
 import com.sfyc.ssl.SkeletonDirection
 import kotlin.math.cos
 import kotlin.math.sin
@@ -37,6 +38,20 @@ internal object ShimmerMotion {
         )
     }
 
+    /**
+     * 一次性算出一帧的完整结果（中心点 + 渐变旋转角）。
+     *
+     * **仅供测试使用，生产绘制路径不要调用本方法。**
+     *
+     * [SkeletonOverlayView.onDraw] 走的是 [distance] + 缓存的 `scanAxisX/Y`：
+     * 每帧只做一次加法与乘法。本方法内部会调用 [resolveAxis]，即每帧
+     * 两条三角函数（`cos` / `sin`），且返回一个新的 [Frame] 对象——
+     * 在 60fps 下是明确的浪费。它的价值在于用可读的形式断言
+     * 「位移轴与渐变轴始终一致」这条不变量，因此保留而不删除。
+     *
+     * 渲染器改为每帧调用本方法会在动画帧内产生分配与三角函数，属回归。
+     */
+    @VisibleForTesting
     fun frame(
         progress: Float,
         centerX: Float,

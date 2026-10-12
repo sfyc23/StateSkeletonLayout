@@ -23,6 +23,14 @@ svga = "2.6.1"
 smartrefresh = "3.0.0-alpha"
 epoxy = "5.2.1"
 ksp = "2.2.10-2.0.2"
+# Dokka 只用于生成发布制品的 API 文档（javadoc jar），不参与运行时代码。
+# 2.1.0 对应 Kotlin 2.2.x；不与 kotlin 版本联动升级。
+dokka = "2.1.0"
+# 公开 API 兼容性基线：把 AAR 的公开签名导出为 api 文件，破坏性变更会显式失败。
+binary-compatibility-validator = "0.18.2"
+# 截图回归：跑在 Robolectric 上，不需要设备。骨架是纯视觉功能，
+# 像素级正确性此前没有任何自动化覆盖。
+roborazzi = "1.76.0"
 coroutines = "1.10.2"
 # 测试
 junit = "4.13.2"
@@ -57,9 +65,14 @@ test-runner = { group = "androidx.test", name = "runner", version.ref = "test-ru
 test-core = { group = "androidx.test", name = "core", version.ref = "test-core" }
 test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "test-espresso" }
 test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "test-ext-junit" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
 
 [plugins]
 agp-library = { id = "com.android.library", version.ref = "agp" }
 agp-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+binary-compat = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binary-compatibility-validator" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

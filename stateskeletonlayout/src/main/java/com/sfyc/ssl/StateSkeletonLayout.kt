@@ -21,6 +21,7 @@ import androidx.annotation.MainThread
 import com.sfyc.ssl.internal.SslDefaultsMerger
 import com.sfyc.ssl.internal.StateCoordinator
 import com.sfyc.ssl.internal.StateViewRegistry
+import com.sfyc.ssl.internal.TransitionController
 import com.sfyc.ssl.internal.InteractionHost
 import com.sfyc.ssl.internal.loading.LayoutLoadingRenderer
 import com.sfyc.ssl.internal.loading.LoadingRenderer
@@ -73,6 +74,20 @@ class StateSkeletonLayout @JvmOverloads constructor(
     private var errorLayoutResId: Int = 0
     private var customLoadingLayoutResId: Int = 0
     private val initialState: StateLayoutState
+
+    /**
+     * 是否启用库内置的空态 / 错误态兜底布局（构造时从 Global 合并一次，随后不可变）。
+     *
+     * 为 true 且宿主未配置 `ssl_emptyLayout` / `ssl_errorLayout` 时，
+     * 用 `ssl_builtin_state_empty` / `ssl_builtin_state_error` 兜底，
+     * 避免每个宿主工程都必须自写两份状态页 XML 才能跑起来。
+     * 为 false 时保持严格行为：未配置即抛异常，不显示任何兜底页面。
+     */
+    private val useBuiltInStateLayouts: Boolean
+
+    /** 当前 EMPTY / ERROR 布局是否来自库内置资源（用于决定是否预设重试入口）。 */
+    private val usingBuiltInErrorLayout: Boolean
+        get() = errorLayoutResId == R.layout.ssl_builtin_state_error
 
     // endregion
 
@@ -172,6 +187,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
     var transitionEffect: StateTransitionEffect = StateTransitionEffect.CROSSFADE
         set(value) {
             checkMainThread("transitionEffect")
+            if (field == value) return
             field = value
         }
 
@@ -182,6 +198,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
         set(value) {
             checkMainThread("transitionDurationMillis")
             require(value >= 0) { "transitionDurationMillis 不得小于 0，当前=$value" }
+            if (field == value) return
             field = value
         }
 
@@ -191,6 +208,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
     var announceStateChanges: Boolean = true
         set(value) {
             checkMainThread("announceStateChanges")
+            if (field == value) return
             field = value
         }
 
@@ -202,8 +220,8 @@ class StateSkeletonLayout @JvmOverloads constructor(
             checkMainThread("errorRetryViewId")
             require(value != View.NO_ID) { "errorRetryViewId 不能为 View.NO_ID；0 表示关闭统一重试" }
             if (field == value) return
-            if (::registry.isInitialized) registry.content(StateLayoutState.ERROR)
-                ?.findViewById<View>(field)?.setOnClickListener(null)
+            // 按各布局实际绑定的 ID 解绑，再给当前错误页绑定新入口。
+            unbindRetry()
             field = value
             lastRetryClickMillis = null
             if (::registry.isInitialized) registry.content(StateLayoutState.ERROR)
@@ -212,10 +230,11 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
     @get:MainThread
     @set:MainThread
-    var retryClickThrottleMillis: Long = RETRY_CLICK_THROTTLE_MILLIS
+    var retryClickThrottleMillis: Long = DEFAULT_RETRY_CLICK_THROTTLE_MILLIS
         set(value) {
             checkMainThread("retryClickThrottleMillis")
             require(value >= 0L) { "retryClickThrottleMillis 不得小于 0" }
+            if (field == value) return
             field = value
         }
 
@@ -223,7 +242,11 @@ class StateSkeletonLayout @JvmOverloads constructor(
     @get:MainThread
     @set:MainThread
     var retryClicksEnabled: Boolean = true
-        set(value) { checkMainThread("retryClicksEnabled"); field = value }
+        set(value) {
+            checkMainThread("retryClicksEnabled")
+            if (field == value) return
+            field = value
+        }
 
     // endregion
 
@@ -260,21 +283,49 @@ class StateSkeletonLayout @JvmOverloads constructor(
     /** 内部添加 Host 时的放行标志，防止被业务子 View 校验拦截。 */
     private var internalAdding: Boolean = false
 
-    /** 当前实际呈现的内容容器、具体状态 View 或骨架 View，用于切换动画的进出判断。 */
-    private var currentTop: View? = null
+    /**
+     * 顶层容器之间的切换动画控制器（P-11 提取）。
+     *
+     * 原先 `crossfade` / `cancelTransitions` / `normalizeToCurrentVisual` /
+     * `finishOutgoing` / `cleanupContainers` / `finalVisibilityOf` 与
+     * `runningTransitions` / `transitioningViews` 都内联在本类里，约 190 行。
+     * 提取为 [TransitionController] 后可单独测试取消语义。
+     *
+     * 构造在 [initRuntime] 中（依赖三个容器）。
+     */
+    private lateinit var transitions: TransitionController
 
-    private val runningTransitions = mutableListOf<ViewPropertyAnimator>()
+    /** 当前呈现的顶层 View；委托给控制器，保持既有读取语义。 */
+    private val currentTop: View? get() = if (::transitions.isInitialized) transitions.currentTop else null
 
     private var onRetryClickListener: OnClickListener? = null
     private var onStateViewCreatedListener: OnStateViewCreatedListener? = null
     private var onRenderedStateChangedListener: OnRenderedStateChangedListener? = null
 
     private var lastRetryClickMillis: Long? = null
+
+    /**
+     * 按错误页根节点记录实际绑定的 retryViewId。
+     *
+     * 替换事务中旧布局与候选布局可同时存在，各自释放或回滚时只清理自身入口。
+     */
+    private val boundRetryIds = mutableMapOf<View, Int>()
     private var lastAnnouncedState: StateLayoutState? = null
     private var lastPresentedState: StateLayoutState = StateLayoutState.CONTENT
     private var savedContentA11yMode: Int = IMPORTANT_FOR_ACCESSIBILITY_AUTO
     private var aggregatedVisible: Boolean = true
     private var detached = false
+
+    /**
+     * 上次按资源解析出的颜色 / 圆角三元组，用于判断当前配置是否仍"由资源派生"。
+     *
+     * 不能只用一个构造期布尔量：宿主可以在运行时把 `skeletonConfig` 整体替换成
+     * 显式品牌色，此后配置就不再由资源派生了。判据必须是**当前值是否仍等于
+     * 上次从资源解析出的值**，而不是"构造时是否没显式指定"。
+     *
+     * 为 null 表示宿主在构造时就显式指定过，从一开始就不该被资源刷新覆盖。
+     */
+    private var resourceDerivedColors: Triple<Int, Int, Float>? = null
     private var explicitRequest = false
     private var initialApplied = false
     private var restoringPresentation = false
@@ -291,11 +342,28 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
     init {
         val (xmlAttrs, themeAttrs) = SslDefaultsMerger.read(context, attrs, defStyleAttr)
-        emptyLayoutResId = xmlAttrs.emptyLayoutResId.takeIf { it != 0 } ?: themeAttrs.emptyLayoutResId
-        errorLayoutResId = xmlAttrs.errorLayoutResId.takeIf { it != 0 } ?: themeAttrs.errorLayoutResId
-        customLoadingLayoutResId = xmlAttrs.customLoadingLayoutResId.takeIf { it != 0 } ?: themeAttrs.customLoadingLayoutResId
-        errorRetryViewId = xmlAttrs.errorRetryViewId.takeIf { it != 0 } ?: themeAttrs.errorRetryViewId
         val merged = SslDefaultsMerger.merge(context, xmlAttrs, StateSkeletonLayoutDefaults.current, themeAttrs)
+        useBuiltInStateLayouts = merged.useBuiltInStateLayouts
+
+        // 布局资源类属性不参与 Global 覆盖（页面各异），逐项按 XML > Theme > 内置兜底解析。
+        val xmlEmpty = xmlAttrs.emptyLayoutResId.takeIf { it != 0 }
+        val xmlError = xmlAttrs.errorLayoutResId.takeIf { it != 0 }
+        emptyLayoutResId = xmlEmpty ?: themeAttrs.emptyLayoutResId
+            .takeIf { it != 0 }
+            ?: builtInLayoutOrZero(R.layout.ssl_builtin_state_empty)
+        errorLayoutResId = xmlError ?: themeAttrs.errorLayoutResId
+            .takeIf { it != 0 }
+            ?: builtInLayoutOrZero(R.layout.ssl_builtin_state_error)
+        customLoadingLayoutResId = xmlAttrs.customLoadingLayoutResId.takeIf { it != 0 } ?: themeAttrs.customLoadingLayoutResId
+
+        // 内置错误页自带重试按钮，此时默认接管统一重试入口，宿主无需再配置。
+        // 宿主提供了自己的 errorLayout 时不预设，避免指向不存在的 ID 并打无谓警告。
+        // 注意 takeIf 必须作用在两处取值上：errorRetryViewId 是非空 Int，
+        // 若只对 xml 侧做 takeIf，0 会顺着 Elvis 右侧继续传下去，兜底永远读不到。
+        val explicitRetryId = xmlAttrs.errorRetryViewId.takeIf { it != 0 }
+            ?: themeAttrs.errorRetryViewId.takeIf { it != 0 }
+        errorRetryViewId = explicitRetryId
+            ?: if (usingBuiltInErrorLayout) R.id.ssl_builtin_state_retry else 0
 
         initialState = merged.initialState
         useSkeleton = merged.useSkeleton
@@ -303,6 +371,18 @@ class StateSkeletonLayout @JvmOverloads constructor(
         transitionEffect = merged.transitionEffect
         transitionDurationMillis = merged.transitionDurationMillis
         announceStateChanges = merged.announceStateChanges
+
+        // 只有三项全部由资源派生时才记录基准值，供配置变更时判定"是否仍未被显式覆盖"。
+        // 构造时就显式指定过任一项的实例，从头到尾都不参与资源刷新。
+        resourceDerivedColors = if (merged.colorsFromResources) {
+            Triple(
+                merged.skeletonConfig.maskColor,
+                merged.skeletonConfig.highlightColor,
+                merged.skeletonConfig.cornerRadius,
+            )
+        } else {
+            null
+        }
 
         coordinator = StateCoordinator(
             clock = UptimeMonotonicClock(),
@@ -318,6 +398,10 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
         isSaveEnabled = true
     }
+
+    /** 内置兜底布局开关为 off 时返回 0，保持"未配置即抛异常"的严格行为。 */
+    private fun builtInLayoutOrZero(@LayoutRes layoutResId: Int): Int =
+        if (useBuiltInStateLayouts) layoutResId else 0
 
     // region 内容接管
 
@@ -434,8 +518,14 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
     private fun initRuntime() {
         registry = StateViewRegistry(context, stateHost) { state, view ->
-            bindRetryIfNeeded(state, view)
-            withBindingCallback { onStateViewCreatedListener?.onStateViewCreated(this, state, view) }
+            try {
+                bindRetryIfNeeded(state, view)
+                withBindingCallback { onStateViewCreatedListener?.onStateViewCreated(this, state, view) }
+            } catch (failure: Throwable) {
+                // 未提交的候选不能残留监听与根节点引用，也不能影响原布局的绑定。
+                unbindRetry(view)
+                throw failure
+            }
         }
         registry.setInitialLayout(StateLayoutState.EMPTY, emptyLayoutResId)
         registry.setInitialLayout(StateLayoutState.ERROR, errorLayoutResId)
@@ -448,8 +538,30 @@ class StateSkeletonLayout @JvmOverloads constructor(
             nodeConfigProvider = { nodeConfigs[it] },
         )
         layoutRenderer = LayoutLoadingRenderer(registry)
-        currentTop = contentHost
+        transitions = TransitionController(
+            contentHost = contentHost,
+            stateHost = stateHost,
+            skeletonOverlay = skeletonOverlay,
+            durationProvider = { transitionDurationMillis },
+            effectProvider = { transitionEffect },
+            onOutgoingFinished = ::onTopLayerFinished,
+        )
+        transitions.currentTop = contentHost
         savedContentA11yMode = contentHost.importantForAccessibility
+    }
+
+    /**
+     * 旧顶层离开后的收尾。
+     *
+     * 骨架遮罩与自定义加载页各有自己的渲染器负责真正的"停"；
+     * 其余顶层（内容容器、普通状态页）只需落到最终可见性。
+     */
+    private fun onTopLayerFinished(outgoing: View, endVisibility: Int) {
+        when {
+            outgoing === skeletonOverlay -> skeletonRenderer.hide()
+            outgoing === registry.peek(StateLayoutState.LOADING) -> layoutRenderer.hide()
+            else -> outgoing.visibility = endVisibility
+        }
     }
 
     // endregion
@@ -560,6 +672,61 @@ class StateSkeletonLayout @JvmOverloads constructor(
         return stateViewFor(state)
     }
 
+    /**
+     * 一次性应用一组页级配置。
+     *
+     * # 为什么需要
+     *
+     * 逐个 setter 配置一个完整实例需要 8–10 次调用：
+     * `setStateViewLayout` ×3、`errorRetryViewId`、`retryClickThrottleMillis`、
+     * `useSkeleton`、`skeletonConfig`、`transitionEffect`……
+     * 程序化创建路径（没有 XML 可写）尤其冗长。
+     *
+     * 本方法不引入新的状态，只是把既有 setter 按固定顺序调用一遍：
+     * 每个字段为 `null` / `0` 时跳过该项，保留当前值。
+     * 已有 setter 全部保留可用，两种入口可以混用。
+     *
+     * # 顺序
+     *
+     * 先布局资源、再重试入口、最后渲染配置。布局资源在前是因为
+     * `errorRetryViewId` 的绑定会查找错误页缓存——错误页尚未创建时
+     * 仅记录 ID，创建时再绑定，因此顺序对结果无影响；但先声明布局
+     * 能让同一批里的 `errorRetryViewId` 立即生效于已缓存的错误页。
+     *
+     * # 示例
+     *
+     * ```kotlin
+     * val layout = StateSkeletonLayout(context)
+     * layout.applyOptions(
+     *     SslLayoutOptions(
+     *         emptyLayoutResId = R.layout.state_empty,
+     *         errorLayoutResId = R.layout.state_error,
+     *         errorRetryViewId = R.id.retry_button,
+     *         useSkeleton = true,
+     *         skeletonConfig = SkeletonConfig(effect = SkeletonEffect.PULSE),
+     *     )
+     * )
+     * layout.setContentView(contentView)
+     * ```
+     */
+    @MainThread
+    fun applyOptions(options: SslLayoutOptions) {
+        checkMainThread("applyOptions")
+        options.emptyLayoutResId?.let { setStateViewLayout(StateLayoutState.EMPTY, it) }
+        options.errorLayoutResId?.let { setStateViewLayout(StateLayoutState.ERROR, it) }
+        options.loadingLayoutResId?.let { setStateViewLayout(StateLayoutState.LOADING, it) }
+        options.errorRetryViewId?.let { errorRetryViewId = it }
+        options.retryClickThrottleMillis?.let { retryClickThrottleMillis = it }
+        options.retryClicksEnabled?.let { retryClicksEnabled = it }
+        options.useSkeleton?.let { useSkeleton = it }
+        options.skeletonConfig?.let { skeletonConfig = it }
+        options.transitionEffect?.let { transitionEffect = it }
+        options.transitionDurationMillis?.let { transitionDurationMillis = it }
+        options.loadingShowDelayMillis?.let { loadingShowDelayMillis = it }
+        options.minimumLoadingDurationMillis?.let { minimumLoadingDurationMillis = it }
+        options.announceStateChanges?.let { announceStateChanges = it }
+    }
+
     /** 更新动态文案等内容，不切换状态、不重置 Loading 计时；需要时创建状态页。 */
     @MainThread
     fun updateStateView(state: StateLayoutState, update: (View) -> Unit) {
@@ -573,14 +740,25 @@ class StateSkeletonLayout @JvmOverloads constructor(
         withBindingCallback { update(view) }
     }
 
-    /** 释放非当前态缓存，保留资源配置；当前可见态不得清除。 */
+    /**
+     * 释放非当前态缓存，保留资源配置；当前可见态不得清除。
+     *
+     * 正在参与过渡的 View 也不得清除：`currentTop` 在交叉淡入开始时就已指向新画面，
+     * 正在淡出的旧画面满足 `!== currentTop`，但它的淡出动画与 `finishOutgoing`
+     * 还持有引用。放行会让淡出结束后对已移除的 View 操作可见性。
+     */
     @MainThread
     fun clearStateViewCache(state: StateLayoutState) {
         checkMainThread("clearStateViewCache")
         require(state != StateLayoutState.CONTENT) { "不能清除业务内容" }
         check(hostsInitialized) { "请先设置业务内容" }
-        check(registry.peek(state) !== currentTop) { "当前呈现的状态页不能清除" }
-        registry.peek(state)?.animate()?.cancel()
+        val cached = registry.peek(state)
+            ?: return
+        check(cached !== currentTop) { "当前呈现的状态页不能清除" }
+        check(!transitions.isTransitioning(cached)) {
+            "正在参与状态切换动画的状态页不能清除，请等动画结束后重试"
+        }
+        cached.animate().cancel()
         registry.clear(state)?.let { releaseStateView(state, it) }
     }
 
@@ -621,7 +799,8 @@ class StateSkeletonLayout @JvmOverloads constructor(
             if (hostsInitialized) skeletonOverlay.maskBytes else 0,
             if (hostsInitialized) skeletonOverlay.maskBuildCount else 0,
             if (hostsInitialized) skeletonOverlay.fallbackReason else SkeletonFallbackReason.NONE,
-            hostsInitialized && skeletonOverlay.isEffectRunning, coordinator.hasPendingWork)
+            hostsInitialized && skeletonOverlay.isEffectRunning, coordinator.hasPendingWork,
+            bindingCallback)
     }
 
     @MainThread
@@ -703,72 +882,48 @@ class StateSkeletonLayout @JvmOverloads constructor(
             onPresented()
             return
         }
-        cancelTransitions()
-        val useAnimate = animate &&
-            transitionEffect == StateTransitionEffect.CROSSFADE &&
-            transitionDurationMillis > 0 &&
-            android.animation.ValueAnimator.areAnimatorsEnabled()
-        val previousTop = currentTop
+        transitions.cancelAll()
+        val useAnimate = transitions.shouldAnimate(animate)
+        val previousTop = transitions.currentTop
         when (state) {
             StateLayoutState.CONTENT -> {
-                restoreContent()
-                currentTop = contentHost
-                crossfade(previousTop, contentHost, finalVisibilityOf(previousTop, contentHost), useAnimate)
+                contentHost.visibility = VISIBLE
+                transitions.currentTop = contentHost
+                transitions.crossfade(previousTop, contentHost, useAnimate)
                 onPresented()
             }
             StateLayoutState.LOADING -> {
                 if (effectiveUseSkeleton()) {
                     skeletonRenderer.show {
-                        currentTop = skeletonOverlay
-                        crossfade(
-                            previousTop,
-                            skeletonOverlay,
-                            finalVisibilityOf(previousTop, skeletonOverlay),
-                            useAnimate,
-                            overlayFade = true,
-                        )
+                        transitions.currentTop = skeletonOverlay
+                        transitions.crossfade(previousTop, skeletonOverlay, useAnimate, overlayFade = true)
                         onPresented()
                     }
                 } else {
                     layoutRenderer.show {
                         val loadingView = checkNotNull(registry.peek(StateLayoutState.LOADING))
-                        showStateViewForTransition(loadingView, previousTop)
+                        transitions.showStateViewForTransition(loadingView, previousTop)
                         stateHost.visibility = VISIBLE
-                        currentTop = loadingView
-                        crossfade(
-                            previousTop,
-                            loadingView,
-                            finalVisibilityOf(previousTop, loadingView),
-                            useAnimate,
-                        )
+                        transitions.currentTop = loadingView
+                        transitions.crossfade(previousTop, loadingView, useAnimate)
                         onPresented()
                     }
                 }
             }
             StateLayoutState.EMPTY -> {
                 val emptyView = registry.require(StateLayoutState.EMPTY)
-                showStateViewForTransition(emptyView, previousTop)
+                transitions.showStateViewForTransition(emptyView, previousTop)
                 stateHost.visibility = VISIBLE
-                currentTop = emptyView
-                crossfade(
-                    previousTop,
-                    emptyView,
-                    finalVisibilityOf(previousTop, emptyView),
-                    useAnimate,
-                )
+                transitions.currentTop = emptyView
+                transitions.crossfade(previousTop, emptyView, useAnimate)
                 onPresented()
             }
             StateLayoutState.ERROR -> {
                 val errorView = registry.require(StateLayoutState.ERROR)
-                showStateViewForTransition(errorView, previousTop)
+                transitions.showStateViewForTransition(errorView, previousTop)
                 stateHost.visibility = VISIBLE
-                currentTop = errorView
-                crossfade(
-                    previousTop,
-                    errorView,
-                    finalVisibilityOf(previousTop, errorView),
-                    useAnimate,
-                )
+                transitions.currentTop = errorView
+                transitions.crossfade(previousTop, errorView, useAnimate)
                 onPresented()
             }
         }
@@ -778,181 +933,6 @@ class StateSkeletonLayout @JvmOverloads constructor(
         updateContentAccessibility(state)
         maybeAnnounce(state)
         try { notifyRendered(state) } finally { syncLoadingVisibility() }
-    }
-
-    // 恢复内容的绘制、交互与无障碍属性（骨架/状态页离开时调用）。
-    private fun restoreContent() {
-        contentHost.visibility = VISIBLE
-    }
-
-    // 抑制内容的绘制与交互：INVISIBLE 仍参与测量布局，不修改后代 visibility。
-    private fun suppressContent() {
-        contentHost.visibility = INVISIBLE
-    }
-
-    // StateHost 内保留目标 View 与正在淡出的旧 View；其余状态立即隐藏。
-    private fun showStateViewForTransition(view: View, outgoing: View?) {
-        if (view.parent == null) {
-            stateHost.addView(view)
-        }
-        for (i in 0 until stateHost.childCount) {
-            val child = stateHost.getChildAt(i)
-            child.visibility = if (child === view || child === outgoing) VISIBLE else GONE
-        }
-        view.bringToFront()
-        view.visibility = VISIBLE
-    }
-
-    // 新旧顶层容器之间的交叉淡入淡出；NONE 模式直接提交最终可见性。
-    private fun crossfade(
-        outgoing: View?,
-        incoming: View?,
-        outgoingEndVisibility: Int,
-        useAnimate: Boolean,
-        overlayFade: Boolean = false,
-    ) {
-        val duration = transitionDurationMillis
-        restoreInteraction(incoming)
-        // 同一具体 View 的无动画重呈现（例如 SavedState 恢复 CONTENT）不是切换；
-        // 若先冻结再走 outgoing === incoming 分支，会让当前画面永久不可交互。
-        if (outgoing !== incoming) {
-            suspendInteraction(outgoing)
-        }
-        if (!useAnimate || outgoing == null || outgoing === incoming) {
-            outgoing?.let {
-                if (it !== incoming) {
-                    finishOutgoing(it, outgoingEndVisibility, incoming)
-                }
-            }
-            incoming?.let {
-                it.alpha = 1f
-                if (it === skeletonOverlay && overlayFade) {
-                    // 骨架遮罩由渲染器控制可见性（可能延迟到布局完成后），
-                    // 这里只保证透明度起点正确，不强行改可见性。
-                } else if (it.visibility != VISIBLE) {
-                    it.visibility = VISIBLE
-                }
-            }
-            cleanupContainers(incoming)
-            return
-        }
-        // 旧容器淡出后彻底关闭交互与无障碍（GONE / INVISIBLE）。
-        outgoing.animate().cancel()
-        val fadeOut = outgoing.animate()
-        runningTransitions.add(fadeOut)
-        fadeOut.alpha(0f).setDuration(duration)
-        fadeOut.setListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                runningTransitions.remove(fadeOut)
-                finishOutgoing(outgoing, outgoingEndVisibility, incoming)
-                outgoing.alpha = 1f
-            }
-
-            override fun onAnimationCancel(animation: Animator) {
-                runningTransitions.remove(fadeOut)
-                outgoing.alpha = 1f
-            }
-        })
-        fadeOut.start()
-        // 新容器从透明淡入；骨架层若尚未布局完成则跳过淡入，由渲染器直接呈现。
-        incoming?.let {
-            if (it === skeletonOverlay && it.visibility != VISIBLE) {
-                return@let
-            }
-            it.animate().cancel()
-            it.alpha = 0f
-            if (it.visibility != VISIBLE) it.visibility = VISIBLE
-            val fadeIn = it.animate()
-            runningTransitions.add(fadeIn)
-            fadeIn.alpha(1f).setDuration(duration)
-            fadeIn.setListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    runningTransitions.remove(fadeIn)
-                    it.alpha = 1f
-                    cleanupContainers(incoming)
-                }
-
-                override fun onAnimationCancel(animation: Animator) {
-                    runningTransitions.remove(fadeIn)
-                    it.alpha = 1f
-                }
-            })
-            fadeIn.start()
-        }
-    }
-
-    // 离开某顶层后的最终可见性：内容回到 VISIBLE 参与布局，其余彻底 GONE。
-    private fun finalVisibilityOf(outgoing: View?, incoming: View): Int {
-        return if (outgoing === contentHost && incoming !== contentHost) {
-            INVISIBLE
-        } else {
-            GONE
-        }
-    }
-
-    private fun finishOutgoing(outgoing: View, endVisibility: Int, incoming: View?) {
-        when {
-            outgoing === skeletonOverlay -> skeletonRenderer.hide()
-            outgoing === registry.peek(StateLayoutState.LOADING) -> layoutRenderer.hide()
-            else -> outgoing.visibility = endVisibility
-        }
-        cleanupContainers(incoming)
-    }
-
-    private fun cleanupContainers(incoming: View?) {
-        val incomingIsStateView = incoming?.parent === stateHost
-        if (!incomingIsStateView) {
-            val hasVisibleState = (0 until stateHost.childCount)
-                .any { stateHost.getChildAt(it).visibility == VISIBLE }
-            if (!hasVisibleState) {
-                stateHost.visibility = GONE
-                stateHost.alpha = 1f
-            }
-        }
-        if (incoming !== contentHost && contentHost.visibility == VISIBLE && currentTop !== contentHost) {
-            // 非动画路径或被取消动画的兜底；动画中的 Content 由 finishOutgoing 处理。
-            if (runningTransitions.isEmpty()) contentHost.visibility = INVISIBLE
-        }
-    }
-
-    private fun suspendInteraction(root: View?) { (root as? InteractionHost)?.blockInteraction(true) }
-
-    private fun restoreInteraction(root: View?) { (root as? InteractionHost)?.blockInteraction(false) }
-
-    private fun cancelTransitions() {
-        // 新状态到来时取消旧切换动画，从当前视觉值继续，不闪回旧状态。
-        // 注意：cancel() 会同步触发 AnimatorListener 的 cancel 回调，
-        // 回调内会从 runningTransitions 移除自身，因此必须先快照再清空，
-        // 不能在遍历中删除（否则抛 ConcurrentModificationException）。
-        val pending = runningTransitions.toList()
-        runningTransitions.clear()
-        for (animator in pending) {
-            animator.cancel()
-        }
-        // 取消可能残留的 View 级动画（AnimatorListener 的 cancel 回调会复位透明度）。
-        contentHost.animate().cancel()
-        stateHost.animate().cancel()
-        skeletonOverlay.animate().cancel()
-        normalizeToCurrentVisual()
-    }
-
-    private fun normalizeToCurrentVisual() {
-        if (!hostsInitialized) return
-        val current = currentTop
-        restoreInteraction(current)
-        contentHost.visibility = if (current === contentHost) VISIBLE else INVISIBLE
-        for (index in 0 until stateHost.childCount) {
-            stateHost.getChildAt(index).visibility =
-                if (stateHost.getChildAt(index) === current) VISIBLE else GONE
-        }
-        stateHost.visibility = if (current?.parent === stateHost) VISIBLE else GONE
-        if (current !== skeletonOverlay) {
-            skeletonRenderer.hide()
-        }
-        val customLoading = registry.peek(StateLayoutState.LOADING)
-        if (current !== customLoading) {
-            layoutRenderer.hide()
-        }
     }
 
     // endregion
@@ -1027,7 +1007,8 @@ class StateSkeletonLayout @JvmOverloads constructor(
     // 错误页首次创建时绑定统一重试入口：只发事件，不自动切换状态。
     private fun bindRetryIfNeeded(state: StateLayoutState, view: View) {
         if (state != StateLayoutState.ERROR || errorRetryViewId == 0) return
-        val retryView = view.findViewById<View>(errorRetryViewId)
+        val retryId = errorRetryViewId
+        val retryView = view.findViewById<View>(retryId)
         if (retryView == null) {
             Log.w(
                 TAG,
@@ -1039,6 +1020,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
         retryView.setOnClickListener {
             // 统一防重复点击，避免快速连点产生重复业务意图。
             if (!retryClicksEnabled || renderedState != StateLayoutState.ERROR ||
+                registry.content(StateLayoutState.ERROR) !== view ||
                 currentTop !== registry.peek(StateLayoutState.ERROR)) return@setOnClickListener
             val now = SystemClock.uptimeMillis()
             val lastClick = lastRetryClickMillis
@@ -1048,6 +1030,22 @@ class StateSkeletonLayout @JvmOverloads constructor(
             lastRetryClickMillis = now
             onRetryClickListener?.onClick(it)
         }
+        boundRetryIds[view] = retryId
+    }
+
+    /**
+     * 解除错误页上的统一重试入口。
+     *
+     * 用绑定当时记录的 ID 与根节点解绑，而不是读当前 [errorRetryViewId]。
+     * 这样「换 ID」与「释放状态页」两条路径不再互相依赖对方的时序。
+     */
+    private fun unbindRetry() {
+        boundRetryIds.keys.toList().forEach { unbindRetry(it) }
+    }
+
+    private fun unbindRetry(view: View) {
+        val retryId = boundRetryIds.remove(view) ?: return
+        view.findViewById<View>(retryId)?.setOnClickListener(null)
     }
 
     // endregion
@@ -1063,10 +1061,14 @@ class StateSkeletonLayout @JvmOverloads constructor(
         layoutRenderer.onAggregatedVisibilityChanged(aggregatedVisible)
         skeletonRenderer.onAttachedToWindow()
         layoutRenderer.onAttachedToWindow()
-        if (presentationInvalidated && requestedState == renderedState) {
+        if (presentationInvalidated) {
             presentationInvalidated = false
-            validateStateConfiguration(requestedState)
-            presentState(requestedState, animate = false) { syncLoadingVisibility() }
+            // detach 已清除加载计时，待退出的 LOADING 交由协调器直接切换，
+            // 避免先启动一次即将过期的异步骨架准备。
+            if (requestedState == renderedState || renderedState != StateLayoutState.LOADING) {
+                validateStateConfiguration(renderedState)
+                presentState(renderedState, animate = false) { syncLoadingVisibility() }
+            }
         }
         if (!initialApplied && !explicitRequest && contentView != null) {
             initialApplied = true
@@ -1083,7 +1085,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
         detached = true
         if (hostsInitialized) {
             syncLoadingVisibility(forceHidden = true)
-            cancelTransitions()
+            transitions.cancelAll()
             coordinator.onDetachedFromWindow()
             skeletonRenderer.onDetachedFromWindow()
             layoutRenderer.onDetachedFromWindow()
@@ -1108,6 +1110,62 @@ class StateSkeletonLayout @JvmOverloads constructor(
         if (w != oldw || h != oldh) {
             skeletonOverlay.invalidateMask()
         }
+    }
+
+    /**
+     * 配置变更（昼夜 / 字体缩放 / locale / 方向）。
+     *
+     * # 为什么需要显式处理
+     *
+     * 控件在此之前完全不响应配置变更：`SkeletonConfig` 是构造时求值的快照，
+     * 而它的颜色与圆角来自 `ssl_mask_default` 等资源。宿主切到夜间模式后，
+     * 骨架会继续用旧主题的颜色绘制，直到该实例被重建。
+     *
+     * # 处理范围
+     *
+     * - **骨架颜色 / 圆角**：仅当当前配置的三项仍等于上次从资源解析出的值（即未被宿主显式覆盖）
+     *   才重新解析。宿主显式指定过任一项时保持不动，避免覆盖品牌色。
+     * - **状态页缓存**：清空按资源声明的缓存 View，下次显示时用新 Configuration
+     *   重新 inflate。布局资源 ID 本身保留，不改变宿主的声明。
+     * - 骨架模板由 `SkeletonLoadingRenderer` 按 `configuration.hashCode()`
+     *   自行判定是否需要重新 inflate，这里不重复处理。
+     */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (!hostsInitialized) return
+
+        val current = skeletonConfig
+        if (resourceDerivedColors?.let { (mask, highlight, radius) ->
+                current.maskColor == mask && current.highlightColor == highlight && current.cornerRadius == radius
+            } == true
+        ) {
+            val refreshed = current.copy(
+                maskColor = context.getColor(R.color.ssl_mask_default),
+                highlightColor = context.getColor(R.color.ssl_highlight_default),
+                cornerRadius = resources.getDimension(R.dimen.ssl_corner_radius_default),
+            )
+            if (refreshed != current) skeletonConfig = refreshed
+            resourceDerivedColors = Triple(refreshed.maskColor, refreshed.highlightColor, refreshed.cornerRadius)
+        }
+
+        // 状态页可能含固定 dp 尺寸与静态文案，按新 Configuration 重新 inflate。
+        // 三个状态页的缓存全部清空（含正在呈现的那个），再由下面的重新呈现用新配置重建；
+        // 只清非活动状态会留下一个仍按旧配置 inflate 的画面。
+        val activeState = renderedState
+        transitions.cancelAll()
+        if (activeState == StateLayoutState.LOADING && !effectiveUseSkeleton()) {
+            syncLoadingVisibility(forceHidden = true)
+        }
+        for (state in listOf(StateLayoutState.EMPTY, StateLayoutState.ERROR, StateLayoutState.LOADING)) {
+            if (state == StateLayoutState.LOADING && effectiveUseSkeleton()) continue
+            registry.clear(state)?.let { releaseStateView(state, it) }
+        }
+        if (activeState != StateLayoutState.CONTENT) {
+            // 刷新画面不提交新状态，协调器继续使用原目标与延迟截止时间。
+            presentationInvalidated = detached
+            if (!detached) presentState(activeState, animate = false) { syncLoadingVisibility() }
+        }
+        skeletonOverlay.invalidateMask()
     }
 
     // endregion
@@ -1162,7 +1220,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
         initialApplied = true
         explicitRequest = true
         syncLoadingVisibility(forceHidden = true)
-        cancelTransitions()
+        transitions.cancelAll()
         skeletonRenderer.hide()
         layoutRenderer.hide()
         coordinator.restore(StateLayoutState.CONTENT)
@@ -1223,7 +1281,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
      * 不保存 Listener / Bitmap / Animator / 业务数据与绝对时间。
      */
     class SavedState : BaseSavedState {
-        internal var formatVersion: Int = 2
+        internal var formatVersion: Int = CURRENT_FORMAT_VERSION
 
         var requestedOrdinal: Int = StateLayoutState.CONTENT.ordinal
         var useSkeletonFlag: Boolean = false
@@ -1248,7 +1306,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
         var errorResource: Int = 0
         var loadingResource: Int = 0
         var retryViewId: Int = 0
-        var retryThrottle: Long = RETRY_CLICK_THROTTLE_MILLIS
+        var retryThrottle: Long = DEFAULT_RETRY_CLICK_THROTTLE_MILLIS
         var retryEnabled: Boolean = true
         val nodeRules = mutableMapOf<Int, SkeletonNodeConfig>()
         val descriptions = mutableMapOf<StateLayoutState, String>()
@@ -1305,8 +1363,14 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
         override fun writeToParcel(out: Parcel, flags: Int) {
             super.writeToParcel(out, flags)
+            // 版本号读字段而不是写字面量：读侧按它决定解析哪些字段，
+            // 若这里与 formatVersion 脱节，恢复会按错误布局解析同一段字节。
+            val version = formatVersion
+            require(version == CURRENT_FORMAT_VERSION) {
+                "SavedState.formatVersion=$version 与写入布局不匹配，当前写入布局对应 $CURRENT_FORMAT_VERSION"
+            }
             out.writeInt(FORMAT_MARKER)
-            out.writeInt(2)
+            out.writeInt(version)
             out.writeInt(requestedOrdinal)
             out.writeInt(if (useSkeletonFlag) 1 else 0)
             out.writeInt(transitionOrdinal)
@@ -1346,6 +1410,15 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
         companion object CREATOR : Parcelable.Creator<SavedState> {
             private const val FORMAT_MARKER = -0x53534C
+
+            /**
+             * 当前 Parcel 写入布局对应的版本号。
+             *
+             * `formatVersion` 字段与 [writeToParcel] 的写入布局必须同步演进：
+             * 新增可保存字段时，把它 +1 并加进 `version >= N` 的读取分支。
+             * 写入前会断言字段等于本值，避免字段改了而写入布局没改。
+             */
+            internal const val CURRENT_FORMAT_VERSION = 2
             override fun createFromParcel(parcel: Parcel): SavedState = SavedState(parcel)
 
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
@@ -1375,7 +1448,9 @@ class StateSkeletonLayout @JvmOverloads constructor(
     }
 
     private fun releaseStateView(state: StateLayoutState, view: View) {
-        if (state == StateLayoutState.ERROR) view.findViewById<View>(errorRetryViewId)?.setOnClickListener(null)
+        // 按绑定当时记录的 ID / 根节点解绑，不读当前的 errorRetryViewId。
+        // 释放的可能是「旧 ID 时代」创建的缓存，读当前值会查错按钮甚至查不到。
+        if (state == StateLayoutState.ERROR) unbindRetry(view)
         withBindingCallback { onStateViewReleasedListener?.onStateViewReleased(this, state, view) }
     }
 
@@ -1401,14 +1476,23 @@ class StateSkeletonLayout @JvmOverloads constructor(
     companion object {
         private const val TAG = "StateSkeletonLayout"
 
-        /** 默认状态切换时长（毫秒）。 */
+        /**
+         * 默认状态切换时长（毫秒）。
+         *
+         * 这些常量是公开默认值的唯一真源：`res/values/styles.xml`、
+         * [com.sfyc.ssl.internal.SslDefaultValues] 与状态协调器都引用本处，
+         * 不再各自声明字面量（历史上三处各写一遍，改一处漏两处不会报错）。
+         * `SslDefaultValuesTest` 逐字段断言 styles.xml 与本处一致。
+         */
         const val DEFAULT_TRANSITION_DURATION_MILLIS: Long = 180L
 
-        /**
-         * 错误重试统一防重复点击间隔（毫秒）。
-         *
-         * 运行时可通过 retryClickThrottleMillis 调整；此值保留为默认间隔。
-         */
-        private const val RETRY_CLICK_THROTTLE_MILLIS: Long = 500L
+        /** 默认错误重试统一防重复点击间隔（毫秒）。 */
+        const val DEFAULT_RETRY_CLICK_THROTTLE_MILLIS: Long = 500L
+
+        /** 默认加载显示延迟（毫秒）：0 表示首次加载立即反馈。 */
+        const val DEFAULT_LOADING_SHOW_DELAY_MILLIS: Long = 0L
+
+        /** 默认 Loading 最短展示时间（毫秒）：避免快速请求引起闪烁。 */
+        const val DEFAULT_MINIMUM_LOADING_DURATION_MILLIS: Long = 300L
     }
 }

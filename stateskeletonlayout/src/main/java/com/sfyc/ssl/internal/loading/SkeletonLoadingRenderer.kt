@@ -118,7 +118,12 @@ internal class SkeletonLoadingRenderer(
 
     override fun onDetachedFromWindow() {
         attached = false
-        pendingOnShown = null
+        // 注意：不清空 pendingOnShown。
+        // 旧实现在这里置 null，导致「模板骨架在尺寸为 0 时等待布局 → 期间 detach」
+        // 这条链上 onShown 被静默吞掉：waitForLayoutOnce() 注册的 pre-draw 回调
+        // 因 detach 守卫直接返回，重新 attach 后也没有人再派发它，而 renderer 的
+        // show(onShown) 契约是「实际可见后必须且只调用一次」。
+        // 保留待派发状态，由 onAttachedToWindow → prepareAndStart 重新尝试派发。
         stopObserving()
         cancelRefresh()
         overlay.stopEffect()

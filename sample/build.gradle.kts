@@ -14,7 +14,7 @@ android {
         applicationId = "com.sfyc.demo.ssl"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
+        versionCode = providers.gradleProperty("sampleVersionCode").get().toInt()
         versionName = providers.gradleProperty("libraryVersion").get()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表骨架模板的圆形头像占位：模板只参与取形，圆形由形状本身表达。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/demo_avatar_placeholder" />
+</shape>

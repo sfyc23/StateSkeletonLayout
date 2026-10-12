@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  库内置空态布局：宿主未配置 ssl_emptyLayout 时的兜底页面。
+
+  只用 android:* 属性，不依赖 Material / AppCompat，避免为兜底布局引入依赖。
+  视觉刻意保持极简：宿主有自己的设计稿时应通过 ssl_emptyLayout 覆盖。
+
+  根节点 ID 固定为 ssl_builtin_state_root，宿主可通过 getStateView() 拿到根节点后
+  查找内部控件替换文案。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ssl_builtin_state_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/ssl_builtin_state_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/ssl_builtin_empty_message"
+        android:textSize="15sp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+</LinearLayout>

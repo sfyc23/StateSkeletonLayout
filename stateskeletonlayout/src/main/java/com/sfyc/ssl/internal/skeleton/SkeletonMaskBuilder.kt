@@ -59,31 +59,58 @@ internal class SkeletonMaskBuilder(
         style = Paint.Style.FILL
     }
 
+    /**
+     * 按深度复用的裁剪矩形池。
+     *
+     * 采集在每个全局布局 / 滚动回调里都会跑一遍，而裁剪矩形对**每个访问到的节点**
+     * 都要复制一次（原实现是 `RectF(inheritedClip)`）。滚动期间该回调触发频繁，
+     * 每个节点一个新 RectF 是明确的 GC 压力来源。
+     *
+     * 复用安全：遍历是深度优先，同一深度的矩形在下钻前刚被 `set()` 写入，
+     * 子节点只读父节点那一层（已写定），兄弟节点各自在使用前重新 `set()`。
+     * 产出到 [out] 的 `visible` / `original` 都是新对象，不与池别名。
+     */
+    private val clipScratch = ArrayList<RectF>()
+
+    private fun clipAt(depth: Int, source: RectF): RectF {
+        while (clipScratch.size <= depth) clipScratch.add(RectF())
+        return clipScratch[depth].apply { set(source) }
+    }
+
+    private fun clipAt(depth: Int, left: Float, top: Float, right: Float, bottom: Float): RectF {
+        while (clipScratch.size <= depth) clipScratch.add(RectF())
+        return clipScratch[depth].apply { set(left, top, right, bottom) }
+    }
+
     fun collectFromContent(host: ViewGroup, overlay: View, out: MutableList<SkeletonGeometry>): Boolean {
         out.clear()
         if (host.width <= 0 || host.height <= 0 || overlay.width <= 0 || overlay.height <= 0) return false
         collectLeaves(host, host.x - overlay.x, host.y - overlay.y,
-            RectF(0f, 0f, overlay.width.toFloat(), overlay.height.toFloat()), out, true)
+            clipAt(0, 0f, 0f, overlay.width.toFloat(), overlay.height.toFloat()), 0, out, true)
         return out.isNotEmpty()
     }
 
     fun collectFromTemplate(host: ViewGroup, out: MutableList<SkeletonGeometry>): Boolean {
         out.clear()
         if (host.width <= 0 || host.height <= 0) return false
-        collectLeaves(host, 0f, 0f, RectF(0f, 0f, host.width.toFloat(), host.height.toFloat()), out, true)
+        collectLeaves(host, 0f, 0f,
+            clipAt(0, 0f, 0f, host.width.toFloat(), host.height.toFloat()), 0, out, true)
         return out.isNotEmpty()
     }
 
     // 两种来源使用相同坐标链：x/y 含 translation，减去每层滚动并叠加祖先矩形裁剪。
     // 根 Host 隐藏后仍参与取形；业务子树的 visibility 则正常过滤。
+    //
+    // depth 只用于在 [clipScratch] 中取该层的复用矩形。产出到 out 的几何
+    // （visible / original）仍是新对象，不与被复用的裁剪矩形共享引用。
     private fun collectLeaves(
-        node: View, x: Float, y: Float, inheritedClip: RectF,
+        node: View, x: Float, y: Float, inheritedClip: RectF, depth: Int,
         out: MutableList<SkeletonGeometry>, isRoot: Boolean,
     ) {
         if ((!isRoot && node.visibility != View.VISIBLE) || node is Space) return
         val rule = if (node.id != View.NO_ID) nodeConfigProvider(node.id) else null
         if (rule?.excluded == true || node.width <= 0 || node.height <= 0) return
-        val clip = RectF(inheritedClip)
+        val clip = clipAt(depth, inheritedClip)
         node.clipBounds?.let {
             if (!clip.intersect(x + it.left, y + it.top, x + it.right, y + it.bottom)) return
         }
@@ -96,7 +123,10 @@ internal class SkeletonMaskBuilder(
             }
             for (i in 0 until node.childCount) {
                 val child = node.getChildAt(i)
-                collectLeaves(child, x + child.x - node.scrollX, y + child.y - node.scrollY, clip, out, false)
+                collectLeaves(
+                    child, x + child.x - node.scrollX, y + child.y - node.scrollY,
+                    clip, depth + 1, out, false,
+                )
             }
             // 容器的后代被隐藏或排除时保持空几何，不把整个父容器补成一块骨架。
             return

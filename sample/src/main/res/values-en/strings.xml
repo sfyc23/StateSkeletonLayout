@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  英文资源：键名与 values/strings.xml 完全一致，仅替换文案。
+  新增或修改中文文案后必须同步本文件，避免英文环境下出现中文残留。
+-->
+<resources>
+    <string name="network_banner_title">Mixed-type feed · content version %1$d</string>
+    <string name="network_hint">The first screen uses the skeleton; pull-to-refresh and load-more keep the existing content. Every request is simulated locally.</string>
+    <string name="network_scenario_success">Three normal pages</string>
+    <string name="network_scenario_empty">First screen empty</string>
+    <string name="network_scenario_error_once">First screen fails once</string>
+    <string name="network_scenario_error">First screen keeps failing</string>
+    <string name="network_scenario_refresh_empty">Empty after refresh</string>
+    <string name="network_scenario_refresh_error">Refresh fails</string>
+    <string name="network_scenario_append_error">Second page fails once</string>
+    <string name="network_scenario_no_more">No more from the first screen</string>
+    <string name="network_scenario_empty_last">Second page empty and last</string>
+    <string name="network_scenario_label">Simulated scenario</string>
+    <string name="network_latency_100">100 ms</string>
+    <string name="network_latency_500">500 ms</string>
+    <string name="network_latency_1500">1500 ms</string>
+    <string name="network_toggle_layout">Switch Linear / Grid</string>
+    <string name="network_load_next">Load next page</string>
+    <string name="network_busy">Request in flight…</string>
+    <string name="network_status">%1$s · %2$s · %3$d ms\nrequest %4$s · nextPage=%5$s · business %6$d / models %7$d</string>
+    <string name="network_idle">Idle</string>
+    <string name="network_error_status">%1$s\nFailed: %2$s. Pull down again after a failed refresh, or pull up / tap load next page after a failed append.</string>
+    <string name="network_error_fallback">Simulated request failed</string>
+    <string name="network_error_description">This simulated request failed, tap retry to try again; replaying resets the fault.</string>
+    <string name="network_empty_description">This request returned empty content successfully. Replay or switch scenario in the control area.</string>
+    <string name="network_section_featured">Featured demo</string>
+    <string name="network_section_records">Articles and recommendations</string>
+    <string name="network_profile_name">Demo user %1$d</string>
+    <string name="network_profile_subtitle">Android developer · content version %1$d</string>
+    <string name="network_article_title">Article %1$d · multi-type list practice</string>
+    <string name="network_article_body">This is deterministic mock content; the version becomes %1$d after a refresh. Images use local colour blocks as placeholders.</string>
+    <string name="network_tile_title">Recommendation card %1$d</string>
+    <string name="network_tile_subtitle">Content version %1$d</string>
+    <string name="network_carousel_title">Horizontal recommendations · scroll both ways</string>
+    <string name="network_carousel_child">Recommended item %1$d</string>
+    <string name="network_carousel_description">Recommended item %1$d, tap to log</string>
+    <string name="demo_app_name">StateSkeleton Demo</string>
+    <string name="demo_catalog_title">StateSkeletonLayout samples</string>
+    <string name="demo_catalog_subtitle">Tap an entry to open its demo; back returns to this page</string>
+
+    <string name="demo_btn_loading">Loading</string>
+    <string name="demo_btn_content">Content</string>
+    <string name="demo_btn_empty">Empty</string>
+    <string name="demo_btn_error">Error</string>
+    <string name="demo_btn_replay">Replay</string>
+
+    <string name="demo_basic_hint">Switch the four states by hand; the error page retry button only emits an event, tap count below</string>
+    <string name="demo_retry_count">Retry taps: %1$d (state stays ERROR, the page decides what comes next)</string>
+
+    <string name="demo_content_hint">The profile card is laid out first, then Loading starts and the skeleton takes its shape from the real content</string>
+    <string name="demo_template_hint">When the content has no size yet, fall back to a standalone template; a template only describes shapes, never real data</string>
+
+    <string name="demo_effect_solid">Solid</string>
+    <string name="demo_effect_shimmer">Shimmer</string>
+    <string name="demo_effect_pulse">Pulse</string>
+    <string name="demo_effect_toggle_direction">Toggle shimmer direction</string>
+    <string name="demo_effect_hint">The three effects are mutually exclusive; replacing SkeletonConfig at runtime takes effect immediately</string>
+
+    <string name="demo_recycler_hint">The list uses a standalone template skeleton; the business Adapter is never replaced and the scroll position is untouched</string>
+    <string name="demo_recycler_toggle">Switch Linear / Grid</string>
+
+    <string name="demo_lottie_hint">Lottie inside the custom loading layout is started and stopped by the page in state callbacks; the library knows nothing about Lottie</string>
+    <string name="demo_lottie_state">Lottie state: %1$s</string>
+
+    <string name="demo_svga_hint">A local loading.svga drives the custom loading page; entering the page simulates 7 seconds, and you can also keep Loading or switch the four states by hand.</string>
+    <string name="demo_svga_simulate">Simulate load (7s)</string>
+    <string name="demo_svga_status">Asset: %1$s · Animation: %2$s · Page: %3$s</string>
+    <string name="demo_svga_idle">Not parsed</string>
+    <string name="demo_svga_parsing">Parsing</string>
+    <string name="demo_svga_ready">Ready</string>
+    <string name="demo_svga_failed">Parse failed</string>
+    <string name="demo_svga_playing">Playing</string>
+    <string name="demo_svga_stopped">Stopped</string>
+    <string name="demo_svga_static">System animations are off, showing static copy</string>
+
+    <string name="demo_timing_hint">Show delay 150 ms, minimum display 600 ms; watch a 100 ms request skip the skeleton entirely</string>
+    <string name="demo_timing_100">Simulate 100 ms request</string>
+    <string name="demo_timing_500">Simulate 500 ms request</string>
+    <string name="demo_timing_1500">Simulate 1500 ms request</string>
+
+    <string name="demo_rapid_hint">Submit Content, Empty then Error in quick succession after Loading; only Error is rendered</string>
+    <string name="demo_rapid_fire">Fire in succession</string>
+
+    <string name="demo_lifecycle_hint">Background the app, switch pages or rotate the device and watch the animation stop and resume in the log; nothing is left behind after the page is destroyed</string>
+
+    <string name="demo_a11y_hint">Each state is announced once on entry; the skeleton is not focusable and hidden content is unreachable by screen readers; turning system animations off shows a static skeleton</string>
+    <string name="demo_a11y_toggle_announce">Announcement switch</string>
+
+    <string name="demo_state_empty_title">Nothing here</string>
+    <string name="demo_state_empty_desc">This space is empty, try again later</string>
+    <string name="demo_state_error_title">Failed to load</string>
+    <string name="demo_state_error_desc">Check your connection and retry</string>
+    <string name="demo_state_retry">Retry</string>
+    <string name="demo_state_loading">Loading…</string>
+
+    <string name="demo_profile_name">Demo user A</string>
+    <string name="demo_profile_title">Android engineer · demo data</string>
+    <string name="demo_profile_bio">This bio is local mock data used to demo the content-shape skeleton; it contains no real personal information.</string>
+    <string name="demo_row_title">Demo row %1$d</string>
+    <string name="demo_row_subtitle">Local mock subtitle</string>
+
+    <string name="demo_defaults_global_hint">Entering the page installs a full-field global default and programmatically creates instance A; installing a partial override and creating instance B shows whole-replacement semantics and that existing instances are untouched</string>
+    <string name="demo_defaults_partial_hint">The global default declares only maskColor and effect, every other field falls back to the library built-in default; instance R additionally overrides via a runtime setter</string>
+    <string name="demo_defaults_priority_hint">Stack the library built-in, Theme, Global, XML and runtime setter layers step by step and check which layer wins each probe field</string>
+    <string name="demo_defaults_invalid_hint">Install an invalid global default and create an instance to see the IllegalArgumentException naming the attribute; the baseline configuration is restored after each run</string>
+    <string name="demo_defaults_instance_a">Instance A (created programmatically, inherits the installed config)</string>
+    <string name="demo_defaults_instance_b">Instance B (created after the second install)</string>
+    <string name="demo_defaults_instance_l">Instance L (only the two Global fields)</string>
+    <string name="demo_defaults_instance_r">Instance R (Global + setter overriding animationDurationMillis = 2500)</string>
+    <string name="demo_defaults_instance_c">Instance C (full-field Global override)</string>
+    <string name="demo_defaults_xml_probe">XML-layer probe widget (read by steps 4 and 5)</string>
+    <string name="demo_defaults_step_instance">Step %1$d observe instance</string>
+    <string name="demo_defaults_btn_install_b">Install partial override again and create instance B</string>
+    <string name="demo_defaults_btn_full">Switch to full-field override and create instance C</string>
+    <string name="demo_defaults_btn_next">Run next step</string>
+    <string name="demo_defaults_btn_invalid_radius">cornerRadius negative</string>
+    <string name="demo_defaults_btn_invalid_duration">animationDurationMillis is 0</string>
+    <string name="demo_defaults_btn_invalid_pulse">pulseMinAlpha above pulseMaxAlpha</string>
+    <string name="demo_defaults_btn_invalid_template">TEMPLATE without a template</string>
+
+    <string name="demo_config_hint">Change the system configuration and watch the skeleton colour and state pages: the library implements onConfigurationChanged, so an instance whose colour and corner radius all derive from resources re-resolves in place without recreating the Activity.</string>
+    <string name="demo_config_note">Note: onConfigurationChanged only refreshes instances whose maskColor / highlightColor / cornerRadius were not explicitly overridden by XML, Theme or a global default — those re-read ssl_mask_default and friends under the new Configuration and clear the cached EMPTY / ERROR / LOADING state pages so they re-inflate on next display; any instance with an explicit override keeps the host brand colour. The skeleton template is re-inflated by the renderer on its own, keyed on configuration.hashCode(). This sample installs a global maskColor and cornerRadius, so the instance on this page is not resource-derived: it keeps the brand colour across a day/night switch, while its state pages and template are still rebuilt under the new Configuration. To exercise the resource-derived path, leave all three fields undeclared in both the global default and the XML. The "Recreate Activity" button is there for contrast: after a full recreation everything is resolved from scratch under the new Configuration.</string>
+    <string name="demo_config_btn_toggle_night">Toggle day/night</string>
+    <string name="demo_config_btn_recreate">Recreate Activity</string>
+    <string name="demo_config_night">Night</string>
+    <string name="demo_config_not_night">Day</string>
+    <string name="demo_config_rtl">RTL (right to left)</string>
+    <string name="demo_config_ltr">LTR (left to right)</string>
+
+    <string name="demo_diagnostics_hint">diagnostics() returns a read-only snapshot taken on the main thread; trigger the static fallback with a pixel budget and watch fallbackReason change</string>
+    <string name="demo_diagnostics_refresh">Refresh diagnostics()</string>
+    <string name="demo_diagnostics_budget_unlimited">Budget: unlimited</string>
+    <string name="demo_diagnostics_budget_tiny">Budget: 1000 pixels</string>
+    <string name="demo_diagnostics_invalidate">invalidateSkeleton()</string>
+    <string name="demo_diagnostics_clear_empty">clearStateViewCache(EMPTY)</string>
+    <string name="demo_diagnostics_clear_error">clearStateViewCache(ERROR)</string>
+    <string name="demo_diagnostics_fallback_none">No fallback: the mask is built normally from the geometry</string>
+    <string name="demo_diagnostics_fallback_empty_content">Content shaping found no valid rectangle, falling back to a single full-size mask</string>
+    <string name="demo_diagnostics_fallback_empty_template">The template produced no visible shape at the current size, falling back to a single full-size mask</string>
+    <string name="demo_diagnostics_fallback_allocation">Mask bitmap allocation failed, switching to static drawing</string>
+    <string name="demo_diagnostics_fallback_pixel_budget">Mask area exceeds maximumMaskPixels: static fallback, no animation; an existing mask is kept for static drawing (maskBytes stays above zero), otherwise it stays empty</string>
+
+    <string name="demo_builtin_hint">The XML on this page declares no ssl_emptyLayout / ssl_errorLayout / ssl_errorRetryViewId; switch to EMPTY / ERROR to verify the library built-in fallback pages</string>
+    <string name="demo_builtin_btn_replace_message">Replace built-in error page copy</string>
+    <string name="demo_builtin_retry_count">Retry taps: %1$d (the unified retry entry the library wires up for you)</string>
+    <string name="demo_builtin_note">Note: the three IDs inside the built-in layouts are a public contract — ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry. When ssl_errorRetryViewId is not set explicitly, the widget binds the built-in retry button as the unified retry entry automatically. To change the copy or swap in your own widget, call getStateView(ERROR) for the root node and replace it via findViewById; the built-in layouts only use android:* attributes so the fallback pages pull in neither Material nor AppCompat.</string>
+    <string name="demo_builtin_replaced_message">Copy replaced by the host</string>
+    <string name="demo_builtin_origin_message">Failed to load. Please retry.</string>
+
+    <string name="demo_list_skeleton_hint">One skeleton instance covers the whole screen of rows, and the list Adapter is never replaced</string>
+    <string name="demo_list_skeleton_note">Why a full-screen template instead of one instance per item: every instance builds its own full-size ALPHA_8 mask, so eight rows means eight per-pixel mask buffers growing linearly with the row count; each instance also subscribes to the animation clock — the library now shares one ticker across instances, but the mask memory is still one buffer per instance. This page reaches the same visual result with a single instance plus a static eight-row template, so memory is independent of how long the list is.</string>
+</resources>

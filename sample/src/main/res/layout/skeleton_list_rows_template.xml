@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  整屏列表骨架模板：纵向 8 行，覆盖首屏可见区域。
+
+  每行只用固定尺寸的 View 表达形状（圆形头像 + 两条文字条），不承载真实数据。
+  一个 StateSkeletonLayout 实例挂这一张模板，就等价于「整屏多行骨架」，
+  而不是给每个 item 各配一个实例（那会按实例数各生成一张全尺寸 ALPHA_8 遮罩）。
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+    <include layout="@layout/item_skeleton_list_row" />
+
+</LinearLayout>

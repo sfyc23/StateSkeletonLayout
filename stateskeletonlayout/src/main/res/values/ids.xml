@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 库内置错误态布局中重试按钮的固定 ID。
+         未显式设置 ssl_errorRetryViewId 时，控件自动用它作为统一重试入口。
+         声明在 ids.xml 中，使宿主可以在代码里直接引用而无需依赖布局文件。 -->
+    <item name="ssl_builtin_state_retry" type="id" />
+    <item name="ssl_builtin_state_message" type="id" />
+    <item name="ssl_builtin_state_root" type="id" />
+</resources>

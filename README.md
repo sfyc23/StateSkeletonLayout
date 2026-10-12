@@ -7,7 +7,7 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 最短展示时间与动画生命周期。
 
 - 库模块：`:stateskeletonlayout`（命名空间 `com.sfyc.ssl`）
-- 示例应用：`:sample`（源码包 `com.sfyc.demo`，namespace / applicationId `com.sfyc.demo.ssl`，16 个演示页）
+- 示例应用：`:sample`（源码包 `com.sfyc.demo`，namespace / applicationId `com.sfyc.demo.ssl`，20 个演示页）
 - UI：Android View System + XML + ViewBinding，不引入 Jetpack Compose
 - 环境：Kotlin 2.2.10、AGP 8.13.2、Gradle 8.14、`compileSdk` / `targetSdk` 36、
   `minSdk` 26、JVM 17
@@ -19,9 +19,9 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 
 ## 接入方式
 
-### JitPack（0.0.1）
+### JitPack（0.0.2）
 
-本工程通过 JitPack 发布库模块的 Release AAR 和源码包，示例应用不进入发布制品。
+本工程通过 JitPack 发布库模块的 Release AAR、源码包和 API 文档包，示例应用不进入发布制品。
 在宿主工程的 `settings.gradle.kts` 中加入仓库：
 
 ```kotlin
@@ -42,12 +42,15 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.1")
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.2")
 }
 ```
 
-构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.1)。
+构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.2)。
 首次请求该版本时 JitPack 会构建制品，只有构建成功后才能解析依赖。
+
+从 `0.0.1` 升级时，需要重新编译应用及使用 `SslGlobalDefaults` / `StateLayoutDiagnostics` 的依赖库。
+这两个公开数据类新增字段，旧 AAR 中对构造函数或 `copy` 的调用可能不再匹配；详见 [修改日志](CHANGELOG.md)。
 
 ### 本地模块
 
@@ -125,6 +128,27 @@ viewLifecycleOwner.lifecycleScope.launch {
 
 ```kotlin
 val layout = StateSkeletonLayout(context)
+layout.applyOptions(
+    SslLayoutOptions(
+        emptyLayoutResId = R.layout.state_empty,
+        errorLayoutResId = R.layout.state_error,
+        errorRetryViewId = R.id.retry_button,
+        useSkeleton = true,
+        skeletonConfig = SkeletonConfig(effect = SkeletonEffect.PULSE),
+    )
+)
+layout.setContentView(contentView) // 只能调用一次
+```
+
+`applyOptions` 只是把既有 setter 按固定顺序调用一遍，字段为 `null` 时跳过、保留当前值。
+既有 setter 全部保留可用，两种入口可以混用。全空 `SslLayoutOptions()` 是空操作
+（可用 `isEmpty` 判断）。
+
+`SslLayoutOptions.skeleton(emptyLayoutResId, errorLayoutResId)` 是"骨架 + 两份状态页"的常用组合便捷工厂。
+
+也可以用逐个 setter 的写法：
+
+```kotlin
 layout.setContentView(contentView) // 只能调用一次
 layout.setStateViewLayout(StateLayoutState.EMPTY, R.layout.state_empty)
 layout.setStateViewLayout(StateLayoutState.ERROR, R.layout.state_error)
@@ -141,6 +165,68 @@ layout.retryClicksEnabled = !uiState.isRetrying
 ```
 
 程序化实例在首次挂载时应用初始态，可以先配置布局资源；挂载前的显式 `render` 优先于初始态。
+
+### 5. 不配置状态页也能用（内置兜底布局）
+
+`EMPTY` / `ERROR` 布局**不配置时不再抛异常**，而是回退到库内置的兜底页面：
+居中一行文案，错误页额外带一个重试按钮。最小接入只需要业务内容本身：
+
+```xml
+<com.sfyc.ssl.StateSkeletonLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_useSkeleton="true">
+
+    <include layout="@layout/content_profile" />
+
+</com.sfyc.ssl.StateSkeletonLayout>
+```
+
+内置错误页自带重试按钮，未显式设置 `ssl_errorRetryViewId` 时控件会自动接管它作为统一重试入口，
+无需额外配置。内置布局的固定 ID 是公开的，可用来替换文案：
+
+```kotlin
+// 库内置布局的 ID（声明在库的 ids.xml 中，可直接引用）。
+com.sfyc.ssl.R.id.ssl_builtin_state_root     // 根 LinearLayout
+com.sfyc.ssl.R.id.ssl_builtin_state_message  // 文案 TextView
+com.sfyc.ssl.R.id.ssl_builtin_state_retry    // 重试按钮（仅错误页）
+
+layout.setStateDescription(StateLayoutState.ERROR, "网络不可用")
+// 或直接改文案：拿到根节点后查找内部控件
+layout.getStateView(StateLayoutState.ERROR)
+    ?.findViewById<TextView>(com.sfyc.ssl.R.id.ssl_builtin_state_message)
+    ?.text = "网络不可用，请检查连接"
+
+// 接入早期就希望"缺配置立即暴露"的工程可以关掉兜底，恢复严格失败：
+StateSkeletonLayoutDefaults.install(SslGlobalDefaults(useBuiltInStateLayouts = false))
+```
+
+内置文案资源为 `ssl_builtin_empty_message` / `ssl_builtin_error_message` / `ssl_builtin_retry`
+（中英各一份），宿主可用同名资源覆盖。内置布局只使用 `android:*` 属性，**不引入 Material / AppCompat 依赖**。
+
+### 6. 在 Jetpack Compose 中使用
+
+库本身**不引入 Compose 依赖**，也不提供 Compose 工件；Compose 页面用 `AndroidView` 包装即可：
+
+```kotlin
+@Composable
+fun ProfileScreen(state: StateLayoutState, content: @Composable () -> Unit) {
+    val holder = remember { mutableStateOf<StateSkeletonLayout?>(null) }
+    AndroidView(
+        factory = { context ->
+            StateSkeletonLayout(context).apply {
+                addView(ComposeView(context).apply { /* 或用 XML 布局 */ })
+                holder.value = this
+            }
+        },
+        modifier = Modifier.fillMaxSize(),
+    )
+    LaunchedEffect(state) { holder.value?.render(state) }
+}
+```
+
+注意两点：`StateSkeletonLayout` 要求恰好一个业务内容子 View；用 `ComposeView` 作为该子 View 时，
+骨架的"内容取形"只能取到 `ComposeView` 这一层，**要骨架就用模板取形**（`ssl_skeletonSource="template"`）。
 
 ## 全局设计默认属性
 
@@ -233,6 +319,37 @@ StateSkeletonLayoutDefaults.install(
 app:ssl_skeletonSource="template"
 app:ssl_skeletonTemplate="@layout/skeleton_list_template"
 ```
+
+**列表骨架推荐"一个实例覆盖整屏"，而不是每个 item 一个 `StateSkeletonLayout`。**
+
+原因有两层，改造后仍然成立：
+
+- **遮罩内存**：每个实例稳定持有一张与自身等大的 `ALPHA_8` 遮罩 Bitmap。
+  20 个 item 级实例 = 20 张遮罩同时驻留。
+- **动画开销**：库已把骨架动画改为**进程级共享时钟**（N 个实例只驱动一个
+  `ValueAnimator`，主线程每帧一次回调），这项开销不再是 N 倍——但遮罩仍是每个实例一份。
+
+因此"整屏模板"是当前唯一能同时保住内存与帧率的做法：模板里静态放 8 行左右的占位，
+滚动时不会续接（这属于"无限列表骨架"的范畴，尚不支持）。
+
+如果确实需要 item 级骨架，建议先用 `diagnostics()` 的 `maskBytes` / `maskBuildCount`
+测量真实占用，再决定规模上限。
+
+### 配置变更（昼夜 / 字体缩放 / locale / RTL）
+
+控件已覆写 `onConfigurationChanged`，会自动处理：
+
+- **骨架颜色与圆角**：仅当它们**仍等于上次从资源解析出的值**（即宿主从未显式覆盖过）时，
+  用新 Configuration 重新解析 `ssl_mask_default` / `ssl_highlight_default` /
+  `ssl_corner_radius_default`。宿主通过 XML / Global / setter 指定过任一项时保持不动，
+  品牌色不会被资源默认值顶掉。
+- **状态页缓存**：三个状态的缓存全部清空，当前呈现的状态页按新配置立即重建
+  （状态页可能含固定 dp 尺寸与静态文案）。布局资源声明保留。
+- **骨架模板**：渲染器按 `configuration.hashCode()` 自行判定是否需要重新 inflate。
+- **RTL 流光**：`SkeletonOverlayView.onRtlPropertiesChanged` 重建着色器并失效遮罩。
+
+如果你的 Activity 声明了 `android:configChanges` 而不重建 View，上述逻辑生效；
+不声明时 View 会被重建，配置自然由新实例读入。两种情况都不需要业务额外处理。
 
 切换列数时同步更换模板并刷新：
 
@@ -362,6 +479,8 @@ Debug、R8 Release、AndroidTest APK 均组装通过；Debug / Release Lint 均�
 其中本页新增 1 项 Overdraw、4 项 ButtonStyle，沿用现有示例背景与按钮样式，没有整体屏蔽警告。
 新增 7 个依赖校验附件已与 JitPack / Maven Central 文件核对，库运行依赖图没有 SVGA 或 Wire。
 已生成调试密钥签名的 `build/svga-implementation/sample-release-validation.apk`，v2 / v3 验签通过，仅供本地验证。
+注意：该 APK 是**仓库外手工签名**的临时产物，仓库里没有任何 `signingConfig` 或 keystore 配置。
+按本文件「版本发布」一节的命令构建出的标准 Release APK 一定是**未签名**的，两者不要混淆。
 设备任务已尝试，但因 `No connected devices!` 未执行；设备冒烟、R8 Release 实际运行、TalkBack 和内存场景仍需补验。
 
 [官方 SVGA Android 仓库](https://github.com/svga/SVGAPlayer-Android)已归档并停止维护。本示例固定使用 2.6.1，
@@ -415,8 +534,8 @@ Loading 一旦真正上屏至少保留该时长（等待首次布局的时间不
 | 属性 | 格式 / 枚举 | 默认值 | 前置条件 / 错误行为 |
 | --- | --- | --- | --- |
 | `ssl_initialState` | `content`、`loading`、`empty`、`error` | `content` | 初始请求进入真实呈现流程；骨架就绪后才推进 rendered |
-| `ssl_emptyLayout` | reference | 无 | 请求 EMPTY 缺配置时抛异常（含属性名） |
-| `ssl_errorLayout` | reference | 无 | 请求 ERROR 缺配置时抛异常 |
+| `ssl_emptyLayout` | reference | 无（回退库内置空态页） | 未配置时用内置兜底页，不抛异常；`useBuiltInStateLayouts=false` 时缺配置抛异常（含属性名） |
+| `ssl_errorLayout` | reference | 无（回退库内置错误页） | 未配置时用内置兜底页，自带重试按钮并被自动接管为统一重试入口 |
 | `ssl_loadingLayout` | reference | 无 | `useSkeleton=false`（默认）缺配置时打警告并回退骨架 |
 | `ssl_useSkeleton` | boolean | `false` | `true`=骨架、`false`=自定义布局 |
 | `ssl_skeletonSource` | `content`、`template` | `content` | — |
@@ -452,6 +571,10 @@ Theme Attribute `ssl_stateSkeletonLayoutStyle` 指向一个 Style 作为辅助�
 StateSkeletonLayoutDefaults.install(SslGlobalDefaults(...))
 StateSkeletonLayoutDefaults.reset()       // 测试隔离用
 
+// 实例级批量配置（程序化创建路径，与逐个 setter 等价；null 字段跳过）
+layout.applyOptions(SslLayoutOptions(emptyLayoutResId = ..., errorLayoutResId = ...))
+SslLayoutOptions.skeleton(emptyLayoutResId, errorLayoutResId)  // 常用组合便捷工厂
+
 val requestedState: StateLayoutState      // 最近请求（只读）
 val renderedState: StateLayoutState       // 已呈现（只读）
 var useSkeleton: Boolean                // true=骨架、false=自定义，默认false
@@ -476,11 +599,15 @@ fun setOnLoadingVisibilityChangedListener(listener)
 fun setOnStateViewReleasedListener(listener)
 fun getStateView(state): View?            // 只查询缓存；骨架加载返回装饰层
 fun updateStateView(state, update)         // 显式创建 / 绑定，不切状态
-fun clearStateViewCache(state)             // 只能释放非当前态
+fun clearStateViewCache(state)             // 只能释放非当前态，且不得是过渡中的 View
 fun setSkeletonNodeConfig(viewId, config)  // null 移除规则
 fun setStateDescription(state, description)
-fun diagnostics(): StateLayoutDiagnostics
+fun diagnostics(): StateLayoutDiagnostics  // 含 inStateViewTransaction 标记
 ```
+
+公开默认值常量（唯一真源，XML 属性表与它们保持一致）：
+`DEFAULT_TRANSITION_DURATION_MILLIS`、`DEFAULT_RETRY_CLICK_THROTTLE_MILLIS`、
+`DEFAULT_LOADING_SHOW_DELAY_MILLIS`、`DEFAULT_MINIMUM_LOADING_DURATION_MILLIS`。
 
 上述运行时配置 setter、状态布局与监听器注册均属于 UI API，只允许在主线程调用；
 后台线程调用会得到一致的 `IllegalStateException`。
@@ -506,7 +633,8 @@ fun diagnostics(): StateLayoutDiagnostics
 - 状态页按需创建；不可见时停止动画，detach 才取消协调器延迟任务。非当前态缓存可显式释放。
 - 多个控件实例的状态、计时、Bitmap、监听器完全独立；全局默认配置只读共享、
   构造时合并一次，不构成可变全局状态。
-- `maximumMaskPixels` 可设置像素预算，默认不限制。超限或分配失败静态降级；`diagnostics()` 按需查询实际分配字节、重建尝试次数、降级原因与动画状态，不自动记录或上传。
+- `maximumMaskPixels` 可设置像素预算，默认不限制。**预算是单张遮罩的限值**：遮罩替换瞬间旧、新两张并存，因此峰值约为该值对应内存的 2 倍。超限或分配失败静态降级；`diagnostics()` 按需查询实际分配字节、重建尝试次数、降级原因与动画状态，不自动记录或上传。
+- 遮罩字节数已实测确认：`ALPHA_8` 为 1 字节/像素，`maskWidth × maskHeight` 即字节数（400×160 → 64000）。遮罩**不跨实例共享**，N 个骨架实例就是 N 张——列表场景请参考上文"列表骨架推荐整屏模板"。
 
 ## 常见问题
 
@@ -533,9 +661,11 @@ fun diagnostics(): StateLayoutDiagnostics
 7. **如何运行时更换状态布局？**
    `setStateViewLayout(EMPTY, R.layout.…)`；旧 View 被移除，下次呈现重新 inflate；
    正在呈现该状态时会立即无动画重建。
-8. **为什么请求未配置状态会抛异常？**
-   有意为之：快速失败好过无反馈空白页；异常信息包含缺失的属性名
-   （如 `ssl_emptyLayout`），按提示补配置即可。
+8. **请求未配置的状态页会怎样？**
+   默认**回退库内置兜底页**（居中文案，错误页自带重试按钮），不再抛异常。
+   内置页视觉刻意极简，有自己的设计稿时应通过 `ssl_emptyLayout` / `ssl_errorLayout` 覆盖。
+   若希望"缺配置立即暴露"，安装 `SslGlobalDefaults(useBuiltInStateLayouts = false)`
+   恢复严格失败，此时异常信息会包含缺失的属性名（如 `ssl_emptyLayout`）。
 9. **模块迁移后 Android Studio 提示找不到旧模块实体？**
    `Can't find module entity for StateSkeletonLayout.StateSkeletonLayout` 表示 IDE 导入工程结构时仍使用旧模块标识。
    重新打开本工程，执行 `File > Sync Project with Gradle Files`，同步完成后选择 `sample` 运行配置再构建。
@@ -561,18 +691,27 @@ fun diagnostics(): StateLayoutDiagnostics
 StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工程名为 stateskeletonlayout
 ├─ settings.gradle.kts / build.gradle.kts / gradle.properties
 ├─ gradle/libs.versions.toml            # 版本固定，无动态版本
+├─ gradle/verification-metadata.xml     # 全部依赖的 SHA-256 校验
 ├─ stateskeletonlayout/                 # :stateskeletonlayout（库）
+│  ├─ api/stateskeletonlayout.api       # 公开 API 基线（apiCheck 校验）
+│  ├─ consumer-rules.pro                # 有意为空，见下
 │  ├─ src/main/java/com/sfyc/ssl/
 │  │  ├─ StateSkeletonLayout.kt         # 唯一公开容器
+│  │  ├─ SslLayoutOptions.kt            # 实例级批量配置快照
 │  │  ├─ StateLayoutState / SkeletonSource /
 │  │  │   SkeletonEffect / SkeletonDirection / SkeletonConfig /
 │  │  │   StateTransitionEffect / SkeletonNodeConfig / 四个监听器 / 诊断快照
 │  │  └─ internal/                      # 协调器/注册表/渲染器/遮罩/时钟（不公开）
-│  ├─ src/main/res/values/             # attrs/colors/dimens/strings/styles
+│  │     ├─ TransitionController.kt     # 状态切换动画（含取消语义）
+│  │     ├─ SslDefaultValues.kt         # 默认值唯一真源
+│  │     └─ skeleton/SkeletonTicker.kt  # 进程级共享动画时钟
+│  ├─ src/main/res/values/             # attrs/colors/dimens/strings/styles/ids
+│  ├─ src/main/res/layout/             # 内置空态 / 错误态兜底布局
 │  ├─ src/debug/res/layout/            # 测试夹具（不进 Release AAR）
-│  ├─ src/test/                        # JVM：协调器时序 + 配置校验 + Robolectric View 测试
+│  ├─ src/test/                        # JVM：时序 + 配置 + 默认值一致性 + SavedState 往返 + 截图回归
+│  ├─ src/test/screenshots/            # Roborazzi 截图基线（需入库）
 │  └─ src/androidTest/                 # 真机：切换/触摸/无障碍/detach 恢复
-└─ sample/                              # :sample（16 个示例页，源码包 com.sfyc.demo）
+└─ sample/                              # :sample（20 个示例页，源码包 com.sfyc.demo）
 ```
 
 ```powershell
@@ -613,7 +752,7 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 - 两模块 Debug / Release、两模块 AndroidTest APK 均组装通过；示例 Release 完成 R8 压缩，标准 Release APK 仍未签名。
 - AAR 公开类、ViewBinding、六类 Epoxy 生成模型及示例 / 测试 Manifest 的新包名已核对。
 - 设备测试已尝试，因真机 ADB 未授权、模拟器不可用而报告 `No online devices found`，未实际执行。
-  15 个示例页、旋转恢复、R8 Release 启动等仍需设备补验。
+  当时为 15 个示例页（后增至 16 个，当前为 20 个）；旋转恢复、R8 Release 启动等仍需设备补验。
 
 以下历史记录属于迁移前状态，旧任务名与旧产物路径按原样保留，不作为本轮验证证据。
 
@@ -632,6 +771,8 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 - 双模块 Lint 0 Error；Release AAR 与 R8 压缩 demo Release 组装通过。
 - 库依赖树经核查仅含 AndroidX Annotation；Gradle Wrapper 与依赖均启用 SHA-256 校验，
   CI 会执行单测、Lint、Release 与两模块 AndroidTest APK 组装。
+  CI 环境为 `windows-latest` + 单一 JDK 17，无多 JDK / 多 API 矩阵（与开发机保持一致）；
+  AndroidTest 只**组装 APK**，从不执行设备测试，设备用例始终需要人工连接设备运行。
 
 未在本次自动化覆盖、需手工验收的项目：
 
@@ -676,24 +817,54 @@ Windows 跨盘构建已验证：当前缓存位于 F 盘、项目位于 G 盘，
 
 ## 版本发布
 
+### 关于 `consumer-rules.pro`（R8 / 混淆）
+
+`stateskeletonlayout/consumer-rules.pro` 会随 Release AAR 透传给宿主。它**只有注释、没有任何 keep 规则**，
+这是有意的：
+
+- XML 里使用的自定义 View（`<com.sfyc.ssl.StateSkeletonLayout>`）由 Android Gradle Plugin
+  自动生成精确的 keep 规则，不需要手工声明；
+- 通过 Kotlin / Java 直接调用的公开 API 由 R8 可达性分析保留；
+- 写 `public *` 一类通配规则会把大量实际用不到的代码一起留下，掩盖真实的压缩问题。
+  `:sample` 的 `minifyEnabled = true` Release 构建作为消费端回归。
+
+**例外**：如果你的工程只通过**反射或动态类名**使用本控件（例如配置驱动的页面框架），
+AGP 无法推断引用关系，需要自行加规则：
+
+```proguard
+-keep class com.sfyc.ssl.StateSkeletonLayout { public *; }
+-keep class com.sfyc.ssl.SkeletonConfig { public *; }
+-keep class com.sfyc.ssl.SslLayoutOptions { public *; }
+```
+
+### 发布流程
+
 版本号在根目录 `gradle.properties` 的 `libraryVersion` 中统一维护，库 POM 与示例应用读取同一值。
-当前版本为 `0.0.1`，Git 标签也使用 `0.0.1`（不加 `v` 前缀）。
+当前版本为 `0.0.2`，Git 标签也使用 `0.0.2`（不加 `v` 前缀）。
+
+发布坐标同样集中在 `gradle.properties`：`libraryGroup`（`com.github.sfyc23`）、
+`libraryArtifactId`（`StateSkeletonLayout`）。示例的 `sampleVersionCode` 与 `libraryVersion`
+分开维护——前者只能单调递增的整数，后者是语义化版本字符串，两者无法互相推导，发布时一起改。
+
+> 制品说明：从 `0.0.2` 起发布制品包含 AAR、`-sources.jar` 与 `-javadoc.jar`
+> （由 Dokka 生成）。`0.0.1` 已发布且无法追溯补发，缺少 doc 制品。
+> 本工程走 JitPack 托管，不带 GPG 签名；也不发布到 Maven Central。
 
 1. 修改版本后，运行库和示例测试、Lint、Release 构建，并验证本地 Maven 发布：
 
    ```powershell
-   .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
+   .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:verifyRoborazziDebug :stateskeletonlayout:apiCheck :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
    ```
 
 2. 提交并推送源码，然后创建并推送与 `libraryVersion` 相同的版本标签：
 
    ```powershell
    git push origin main
-   git tag -a 0.0.1 -m "Release 0.0.1"
-   git push origin 0.0.1
+   git tag -a 0.0.2 -m "Release 0.0.2"
+   git push origin 0.0.2
    ```
 
-3. 在 JitPack 项目页面选择对应版本并请求构建，检查状态和日志；成功后核对 POM、AAR 与源码包。
+3. 创建对应标签的 GitHub Release，在 JitPack 项目页面请求构建，检查状态和日志；成功后核对 POM、AAR、源码包与 API 文档包。
 
 JitPack 使用 Java 17，通过根目录 `jitpack.yml` 调用库模块的 Maven 发布任务。
 发布采用 Maven POM 与标准 `-sources.jar`；为兼容 JitPack 的源码文件名处理，不发布 Gradle `.module` 元数据。
@@ -713,6 +884,6 @@ GitHub 仓库包含库、示例、测试、Gradle Wrapper 与 CI；本机 SDK �
 
 ## 参考与许可
 
-- 设计思路参考 Drakeet StateLayout（https://github.com/Drakeet/StateLayout）与 Faltenreich SkeletonLayout（https://github.com/Faltenreich/SkeletonLayout），未复制其源代码，两者均为 Apache-2.0。
+- 感谢 [liangjingkanji/StateLayout](https://github.com/liangjingkanji/StateLayout) 和 [Faltenreich/SkeletonLayout](https://github.com/Faltenreich/SkeletonLayout) 提供的设计参考。
 - 库模块显式依赖 AndroidX Annotation（Apache-2.0），另有 Kotlin 标准库（Apache-2.0）；示例模块另用 AppCompat / Material / RecyclerView / Lifecycle / Lottie / SVGAPlayer-Android / SmartRefreshLayout / Epoxy / Coroutines 等，均为 Apache-2.0（Checker Qual 为 MIT），仅供示例演示。
 - 本工程采用 Apache License 2.0，见根目录 `LICENSE`。

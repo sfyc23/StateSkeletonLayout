@@ -27,6 +27,17 @@ internal data class MergedSslConfig(
     val transitionEffect: StateTransitionEffect,
     val transitionDurationMillis: Long,
     val announceStateChanges: Boolean,
+    /** 未配置 EMPTY / ERROR 布局时是否回退到库内置布局。 */
+    val useBuiltInStateLayouts: Boolean,
+    /**
+     * 颜色与圆角是否来自资源（而非宿主显式指定）。
+     *
+     * 为 true 表示这三个值没有经过 XML / Global / Theme 任一层显式覆盖，
+     * 完全由 `ssl_mask_default` / `ssl_highlight_default` /
+     * `ssl_corner_radius_default` 决定。昼夜切换时应当用新 Configuration
+     * 重新解析，否则骨架会停留在旧主题的颜色上。
+     */
+    val colorsFromResources: Boolean,
 )
 
 /**
@@ -87,10 +98,18 @@ internal object SslDefaultsMerger {
         global: SslGlobalDefaults,
         themeAttrs: XmlSslAttrs = XmlSslAttrs(),
     ): MergedSslConfig {
+        // 三处显式来源都为空时，颜色 / 圆角完全由资源决定，昼夜切换需要重新解析。
+        val maskFromResources = xmlAttrs.maskColor == null &&
+            global.maskColor == null && themeAttrs.maskColor == null
+        val highlightFromResources = xmlAttrs.highlightColor == null &&
+            global.highlightColor == null && themeAttrs.highlightColor == null
+        val radiusFromResources = xmlAttrs.cornerRadius == null &&
+            global.cornerRadius == null && themeAttrs.cornerRadius == null
+
         val skeletonConfig = SkeletonConfig(
-            source = xmlAttrs.source ?: global.skeletonSource ?: themeAttrs.source ?: SkeletonSource.CONTENT,
+            source = xmlAttrs.source ?: global.skeletonSource ?: themeAttrs.source ?: SslDefaultValues.SOURCE,
             templateLayoutResId = xmlAttrs.templateLayoutResId ?: themeAttrs.templateLayoutResId,
-            effect = xmlAttrs.effect ?: global.effect ?: themeAttrs.effect ?: SkeletonEffect.SHIMMER,
+            effect = xmlAttrs.effect ?: global.effect ?: themeAttrs.effect ?: SslDefaultValues.EFFECT,
             maskColor = xmlAttrs.maskColor ?: global.maskColor ?: themeAttrs.maskColor
                 ?: context.getColor(R.color.ssl_mask_default),
             highlightColor = xmlAttrs.highlightColor ?: global.highlightColor ?: themeAttrs.highlightColor
@@ -99,31 +118,39 @@ internal object SslDefaultsMerger {
                 ?: context.resources.getDimension(R.dimen.ssl_corner_radius_default),
             animationDurationMillis = xmlAttrs.animationDurationMillis
                 ?: global.animationDurationMillis ?: themeAttrs.animationDurationMillis
-                ?: SkeletonConfig.DEFAULT_ANIMATION_DURATION_MILLIS,
+                ?: SslDefaultValues.ANIMATION_DURATION_MILLIS,
             direction = xmlAttrs.direction ?: global.direction ?: themeAttrs.direction
-                ?: SkeletonDirection.START_TO_END,
+                ?: SslDefaultValues.DIRECTION,
             angleDegrees = xmlAttrs.angleDegrees ?: global.angleDegrees ?: themeAttrs.angleDegrees
-                ?: SkeletonConfig.DEFAULT_ANGLE_DEGREES,
+                ?: SslDefaultValues.ANGLE_DEGREES,
             pulseMinAlpha = xmlAttrs.pulseMinAlpha ?: global.pulseMinAlpha ?: themeAttrs.pulseMinAlpha
-                ?: SkeletonConfig.DEFAULT_PULSE_MIN_ALPHA,
+                ?: SslDefaultValues.PULSE_MIN_ALPHA,
             pulseMaxAlpha = xmlAttrs.pulseMaxAlpha ?: global.pulseMaxAlpha ?: themeAttrs.pulseMaxAlpha
-                ?: SkeletonConfig.DEFAULT_PULSE_MAX_ALPHA,
+                ?: SslDefaultValues.PULSE_MAX_ALPHA,
         )
         return MergedSslConfig(
             initialState = xmlAttrs.initialState ?: global.initialState ?: themeAttrs.initialState
-                ?: StateLayoutState.CONTENT,
-            useSkeleton = xmlAttrs.useSkeleton ?: global.useSkeleton ?: themeAttrs.useSkeleton ?: false,
+                ?: SslDefaultValues.INITIAL_STATE,
+            useSkeleton = xmlAttrs.useSkeleton ?: global.useSkeleton ?: themeAttrs.useSkeleton
+                ?: SslDefaultValues.USE_SKELETON,
             skeletonConfig = skeletonConfig,
             loadingShowDelayMillis = xmlAttrs.loadingShowDelayMillis
-                ?: global.loadingShowDelayMillis ?: themeAttrs.loadingShowDelayMillis ?: 0L,
+                ?: global.loadingShowDelayMillis ?: themeAttrs.loadingShowDelayMillis
+                ?: SslDefaultValues.LOADING_SHOW_DELAY_MILLIS,
             minimumLoadingDurationMillis = xmlAttrs.minimumLoadingDurationMillis
-                ?: global.minimumLoadingDurationMillis ?: themeAttrs.minimumLoadingDurationMillis ?: 300L,
+                ?: global.minimumLoadingDurationMillis ?: themeAttrs.minimumLoadingDurationMillis
+                ?: SslDefaultValues.MINIMUM_LOADING_DURATION_MILLIS,
             transitionEffect = xmlAttrs.transitionEffect ?: global.transitionEffect ?: themeAttrs.transitionEffect
-                ?: StateTransitionEffect.CROSSFADE,
+                ?: SslDefaultValues.TRANSITION_EFFECT,
             transitionDurationMillis = xmlAttrs.transitionDurationMillis
-                ?: global.transitionDurationMillis ?: themeAttrs.transitionDurationMillis ?: 180L,
+                ?: global.transitionDurationMillis ?: themeAttrs.transitionDurationMillis
+                ?: SslDefaultValues.TRANSITION_DURATION_MILLIS,
             announceStateChanges = xmlAttrs.announceStateChanges
-                ?: global.announceStateChanges ?: themeAttrs.announceStateChanges ?: true,
+                ?: global.announceStateChanges ?: themeAttrs.announceStateChanges
+                ?: SslDefaultValues.ANNOUNCE_STATE_CHANGES,
+            useBuiltInStateLayouts = global.useBuiltInStateLayouts
+                ?: SslDefaultValues.USE_BUILT_IN_STATE_LAYOUTS,
+            colorsFromResources = maskFromResources && highlightFromResources && radiusFromResources,
         )
     }
 

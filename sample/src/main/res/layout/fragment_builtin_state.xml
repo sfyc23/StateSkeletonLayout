@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  内置状态页示例：XML 只声明业务内容，刻意不写 ssl_emptyLayout / ssl_errorLayout /
+  ssl_errorRetryViewId，验证库内置兜底页面与自动接管的统一重试入口。
+
+  内置布局的三个固定 ID 定义在库的 ids.xml 中：
+  com.sfyc.ssl.R.id.ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry。
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/demo_background"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/demo_builtin_hint"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="13sp" />
+
+        <com.sfyc.ssl.StateSkeletonLayout
+            android:id="@+id/demo_state"
+            android:layout_width="match_parent"
+            android:layout_height="280dp"
+            android:layout_marginTop="12dp"
+            app:ssl_useSkeleton="true"
+            app:ssl_skeletonEffect="shimmer"
+            app:ssl_skeletonSource="template"
+            app:ssl_skeletonTemplate="@layout/skeleton_profile_template">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/demo_card"
+                android:gravity="center"
+                android:text="@string/demo_btn_content"
+                android:textColor="@color/demo_text_primary"
+                android:textSize="18sp" />
+
+        </com.sfyc.ssl.StateSkeletonLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/demo_btn_loading"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_loading" />
+
+            <Button
+                android:id="@+id/demo_btn_content"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_content" />
+
+            <Button
+                android:id="@+id/demo_btn_empty"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_empty" />
+
+            <Button
+                android:id="@+id/demo_btn_error"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/demo_btn_error" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/demo_btn_replace_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/demo_builtin_btn_replace_message" />
+
+        <TextView
+            android:id="@+id/demo_retry_count"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/demo_text_primary"
+            android:textSize="14sp"
+            tools:text="重试点击：0 次" />
+
+        <TextView
+            android:id="@+id/demo_builtin_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/demo_builtin_note"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/demo_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/demo_card"
+            android:padding="8dp"
+            android:textColor="@color/demo_text_secondary"
+            android:textSize="12sp"
+            android:typeface="monospace"
+            tools:text="log" />
+
+    </LinearLayout>
+
+</ScrollView>

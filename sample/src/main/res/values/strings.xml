@@ -118,4 +118,36 @@
     <string name="demo_defaults_btn_invalid_duration">animationDurationMillis 为 0</string>
     <string name="demo_defaults_btn_invalid_pulse">pulseMinAlpha 大于 pulseMaxAlpha</string>
     <string name="demo_defaults_btn_invalid_template">TEMPLATE 无模板</string>
+
+    <string name="demo_config_hint">切换系统配置后观察骨架颜色与状态页：库已实现 onConfigurationChanged，颜色 / 圆角全部由资源派生的实例会就地重新解析，无需重建 Activity。</string>
+    <string name="demo_config_note">说明：构造时 maskColor / highlightColor / cornerRadius 三项都未被 XML、Theme 或全局默认显式覆盖的实例，才会在配置变化时按新 Configuration 重新读取 ssl_mask_default 等资源，并清空 EMPTY / ERROR / LOADING 的状态页缓存，下次显示时重新 inflate；任一显式覆盖过的实例保持宿主品牌色不变。骨架模板由渲染器按 configuration.hashCode() 自行判定是否需要重新 inflate。本示例的 Application 安装了全局 maskColor 与 cornerRadius，因此本页这个实例不属于资源派生：切换昼夜时它保持品牌色，而状态页与模板仍会按新 Configuration 重建；想验证资源派生那条路径，请让全局默认与 XML 都不声明这三项。上方的「重建 Activity」用于对照：重建后一切按新 Configuration 从头取值。</string>
+    <string name="demo_config_btn_toggle_night">切换昼夜</string>
+    <string name="demo_config_btn_recreate">重建 Activity</string>
+    <string name="demo_config_night">夜间</string>
+    <string name="demo_config_not_night">日间</string>
+    <string name="demo_config_rtl">RTL（从右到左）</string>
+    <string name="demo_config_ltr">LTR（从左到右）</string>
+
+    <string name="demo_diagnostics_hint">diagnostics() 返回主线程上的只读快照；用像素预算触发静态降级，再观察 fallbackReason 的变化</string>
+    <string name="demo_diagnostics_refresh">刷新 diagnostics()</string>
+    <string name="demo_diagnostics_budget_unlimited">预算：不限制</string>
+    <string name="demo_diagnostics_budget_tiny">预算：1000 像素</string>
+    <string name="demo_diagnostics_invalidate">invalidateSkeleton()</string>
+    <string name="demo_diagnostics_clear_empty">clearStateViewCache(EMPTY)</string>
+    <string name="demo_diagnostics_clear_error">clearStateViewCache(ERROR)</string>
+    <string name="demo_diagnostics_fallback_none">无降级：遮罩按几何正常构建</string>
+    <string name="demo_diagnostics_fallback_empty_content">内容取形未取到有效矩形，降级为整块遮罩</string>
+    <string name="demo_diagnostics_fallback_empty_template">当前尺寸下模板未产生可见形状，降级为整块遮罩</string>
+    <string name="demo_diagnostics_fallback_allocation">遮罩 Bitmap 分配失败，改用静态绘制</string>
+    <string name="demo_diagnostics_fallback_pixel_budget">遮罩面积超过 maximumMaskPixels：静态降级、动画不启动；已有遮罩会保留用于静态绘制（maskBytes 不为 0），若此前没有遮罩则保持为空</string>
+
+    <string name="demo_builtin_hint">本页 XML 不写 ssl_emptyLayout / ssl_errorLayout / ssl_errorRetryViewId，切到 EMPTY / ERROR 验证库内置兜底页面</string>
+    <string name="demo_builtin_btn_replace_message">替换内置错误页文案</string>
+    <string name="demo_builtin_retry_count">重试点击：%1$d 次（由库自动接管的统一重试入口）</string>
+    <string name="demo_builtin_note">说明：库内置布局的三个 ID 是公开契约——ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry。未显式配置 ssl_errorRetryViewId 时，控件自动把内置重试按钮绑成统一重试入口。要改文案或换成自己的控件，用 getStateView(ERROR) 拿到根节点后 findViewById 替换即可；库的内置布局只依赖 android:* 属性，不会为兜底页引入 Material / AppCompat。</string>
+    <string name="demo_builtin_replaced_message">已由宿主替换的文案</string>
+    <string name="demo_builtin_origin_message">加载失败，请重试</string>
+
+    <string name="demo_list_skeleton_hint">一个骨架实例覆盖整屏多行，列表 Adapter 不被替换</string>
+    <string name="demo_list_skeleton_note">为什么推荐整屏模板而不是每个 item 一个实例：每个实例会各自构建一张全尺寸 ALPHA_8 遮罩，8 行列表就是 8 份逐像素的遮罩内存，随行数线性增长；每实例还各自订阅动画时钟，库已把动画改为共享时钟，但遮罩内存仍是每实例一份。本页用 1 个实例 + 静态 8 行模板达到同样效果，内存占用与列表长度无关。</string>
 </resources>

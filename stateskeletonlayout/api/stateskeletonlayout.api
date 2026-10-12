@@ -1,0 +1,408 @@
+public final class com/sfyc/ssl/BuildConfig {
+	public static final field BUILD_TYPE Ljava/lang/String;
+	public static final field DEBUG Z
+	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
+	public fun <init> ()V
+}
+
+public abstract interface class com/sfyc/ssl/OnLoadingVisibilityChangedListener {
+	public abstract fun onLoadingVisibilityChanged (Lcom/sfyc/ssl/StateSkeletonLayout;ZLandroid/view/View;)V
+}
+
+public abstract interface class com/sfyc/ssl/OnRenderedStateChangedListener {
+	public abstract fun onRenderedStateChanged (Lcom/sfyc/ssl/StateSkeletonLayout;Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/StateLayoutState;Landroid/view/View;)V
+}
+
+public abstract interface class com/sfyc/ssl/OnStateViewCreatedListener {
+	public abstract fun onStateViewCreated (Lcom/sfyc/ssl/StateSkeletonLayout;Lcom/sfyc/ssl/StateLayoutState;Landroid/view/View;)V
+}
+
+public abstract interface class com/sfyc/ssl/OnStateViewReleasedListener {
+	public abstract fun onStateViewReleased (Lcom/sfyc/ssl/StateSkeletonLayout;Lcom/sfyc/ssl/StateLayoutState;Landroid/view/View;)V
+}
+
+public final class com/sfyc/ssl/SkeletonConfig {
+	public static final field Companion Lcom/sfyc/ssl/SkeletonConfig$Companion;
+	public static final field DEFAULT_ANGLE_DEGREES I
+	public static final field DEFAULT_ANIMATION_DURATION_MILLIS J
+	public static final field DEFAULT_CORNER_RADIUS_PX F
+	public static final field DEFAULT_HIGHLIGHT_COLOR I
+	public static final field DEFAULT_MASK_COLOR I
+	public static final field DEFAULT_PULSE_MAX_ALPHA F
+	public static final field DEFAULT_PULSE_MIN_ALPHA F
+	public fun <init> ()V
+	public fun <init> (Lcom/sfyc/ssl/SkeletonSource;Ljava/lang/Integer;Lcom/sfyc/ssl/SkeletonEffect;IIFJLcom/sfyc/ssl/SkeletonDirection;IFFJ)V
+	public synthetic fun <init> (Lcom/sfyc/ssl/SkeletonSource;Ljava/lang/Integer;Lcom/sfyc/ssl/SkeletonEffect;IIFJLcom/sfyc/ssl/SkeletonDirection;IFFJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/sfyc/ssl/SkeletonSource;
+	public final fun component10 ()F
+	public final fun component11 ()F
+	public final fun component12 ()J
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()Lcom/sfyc/ssl/SkeletonEffect;
+	public final fun component4 ()I
+	public final fun component5 ()I
+	public final fun component6 ()F
+	public final fun component7 ()J
+	public final fun component8 ()Lcom/sfyc/ssl/SkeletonDirection;
+	public final fun component9 ()I
+	public final fun copy (Lcom/sfyc/ssl/SkeletonSource;Ljava/lang/Integer;Lcom/sfyc/ssl/SkeletonEffect;IIFJLcom/sfyc/ssl/SkeletonDirection;IFFJ)Lcom/sfyc/ssl/SkeletonConfig;
+	public static synthetic fun copy$default (Lcom/sfyc/ssl/SkeletonConfig;Lcom/sfyc/ssl/SkeletonSource;Ljava/lang/Integer;Lcom/sfyc/ssl/SkeletonEffect;IIFJLcom/sfyc/ssl/SkeletonDirection;IFFJILjava/lang/Object;)Lcom/sfyc/ssl/SkeletonConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun from (Landroid/content/Context;)Lcom/sfyc/ssl/SkeletonConfig;
+	public final fun getAngleDegrees ()I
+	public final fun getAnimationDurationMillis ()J
+	public final fun getCornerRadius ()F
+	public final fun getDirection ()Lcom/sfyc/ssl/SkeletonDirection;
+	public final fun getEffect ()Lcom/sfyc/ssl/SkeletonEffect;
+	public final fun getHighlightColor ()I
+	public final fun getMaskColor ()I
+	public final fun getMaximumMaskPixels ()J
+	public final fun getNormalizedAngleDegrees ()I
+	public final fun getPulseMaxAlpha ()F
+	public final fun getPulseMinAlpha ()F
+	public final fun getSource ()Lcom/sfyc/ssl/SkeletonSource;
+	public final fun getTemplateLayoutResId ()Ljava/lang/Integer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/sfyc/ssl/SkeletonConfig$Companion {
+	public final fun from (Landroid/content/Context;)Lcom/sfyc/ssl/SkeletonConfig;
+}
+
+public final class com/sfyc/ssl/SkeletonDirection : java/lang/Enum {
+	public static final field END_TO_START Lcom/sfyc/ssl/SkeletonDirection;
+	public static final field START_TO_END Lcom/sfyc/ssl/SkeletonDirection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/SkeletonDirection;
+	public static fun values ()[Lcom/sfyc/ssl/SkeletonDirection;
+}
+
+public final class com/sfyc/ssl/SkeletonEffect : java/lang/Enum {
+	public static final field PULSE Lcom/sfyc/ssl/SkeletonEffect;
+	public static final field SHIMMER Lcom/sfyc/ssl/SkeletonEffect;
+	public static final field SOLID Lcom/sfyc/ssl/SkeletonEffect;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/SkeletonEffect;
+	public static fun values ()[Lcom/sfyc/ssl/SkeletonEffect;
+}
+
+public final class com/sfyc/ssl/SkeletonFallbackReason : java/lang/Enum {
+	public static final field ALLOCATION_FAILED Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public static final field EMPTY_CONTENT Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public static final field EMPTY_TEMPLATE_AT_CURRENT_SIZE Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public static final field NONE Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public static final field PIXEL_BUDGET_EXCEEDED Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public static fun values ()[Lcom/sfyc/ssl/SkeletonFallbackReason;
+}
+
+public final class com/sfyc/ssl/SkeletonNodeConfig {
+	public fun <init> ()V
+	public fun <init> (ZLcom/sfyc/ssl/SkeletonShape;Ljava/lang/Float;)V
+	public synthetic fun <init> (ZLcom/sfyc/ssl/SkeletonShape;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Lcom/sfyc/ssl/SkeletonShape;
+	public final fun component3 ()Ljava/lang/Float;
+	public final fun copy (ZLcom/sfyc/ssl/SkeletonShape;Ljava/lang/Float;)Lcom/sfyc/ssl/SkeletonNodeConfig;
+	public static synthetic fun copy$default (Lcom/sfyc/ssl/SkeletonNodeConfig;ZLcom/sfyc/ssl/SkeletonShape;Ljava/lang/Float;ILjava/lang/Object;)Lcom/sfyc/ssl/SkeletonNodeConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCornerRadius ()Ljava/lang/Float;
+	public final fun getExcluded ()Z
+	public final fun getShape ()Lcom/sfyc/ssl/SkeletonShape;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/sfyc/ssl/SkeletonShape : java/lang/Enum {
+	public static final field CIRCLE Lcom/sfyc/ssl/SkeletonShape;
+	public static final field RECTANGLE Lcom/sfyc/ssl/SkeletonShape;
+	public static final field ROUNDED_RECTANGLE Lcom/sfyc/ssl/SkeletonShape;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/SkeletonShape;
+	public static fun values ()[Lcom/sfyc/ssl/SkeletonShape;
+}
+
+public final class com/sfyc/ssl/SkeletonSource : java/lang/Enum {
+	public static final field CONTENT Lcom/sfyc/ssl/SkeletonSource;
+	public static final field TEMPLATE Lcom/sfyc/ssl/SkeletonSource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/SkeletonSource;
+	public static fun values ()[Lcom/sfyc/ssl/SkeletonSource;
+}
+
+public final class com/sfyc/ssl/SslGlobalDefaults {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonSource;Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/SkeletonEffect;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Long;Lcom/sfyc/ssl/SkeletonDirection;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonSource;Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/SkeletonEffect;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Long;Lcom/sfyc/ssl/SkeletonDirection;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Boolean;
+	public final fun component10 ()Ljava/lang/Integer;
+	public final fun component11 ()Ljava/lang/Float;
+	public final fun component12 ()Ljava/lang/Float;
+	public final fun component13 ()Ljava/lang/Long;
+	public final fun component14 ()Ljava/lang/Long;
+	public final fun component15 ()Lcom/sfyc/ssl/StateTransitionEffect;
+	public final fun component16 ()Ljava/lang/Long;
+	public final fun component17 ()Ljava/lang/Boolean;
+	public final fun component18 ()Ljava/lang/Boolean;
+	public final fun component2 ()Lcom/sfyc/ssl/SkeletonSource;
+	public final fun component3 ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun component4 ()Lcom/sfyc/ssl/SkeletonEffect;
+	public final fun component5 ()Ljava/lang/Integer;
+	public final fun component6 ()Ljava/lang/Integer;
+	public final fun component7 ()Ljava/lang/Float;
+	public final fun component8 ()Ljava/lang/Long;
+	public final fun component9 ()Lcom/sfyc/ssl/SkeletonDirection;
+	public final fun copy (Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonSource;Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/SkeletonEffect;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Long;Lcom/sfyc/ssl/SkeletonDirection;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/sfyc/ssl/SslGlobalDefaults;
+	public static synthetic fun copy$default (Lcom/sfyc/ssl/SslGlobalDefaults;Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonSource;Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/SkeletonEffect;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Long;Lcom/sfyc/ssl/SkeletonDirection;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/sfyc/ssl/SslGlobalDefaults;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAngleDegrees ()Ljava/lang/Integer;
+	public final fun getAnimationDurationMillis ()Ljava/lang/Long;
+	public final fun getAnnounceStateChanges ()Ljava/lang/Boolean;
+	public final fun getCornerRadius ()Ljava/lang/Float;
+	public final fun getDirection ()Lcom/sfyc/ssl/SkeletonDirection;
+	public final fun getEffect ()Lcom/sfyc/ssl/SkeletonEffect;
+	public final fun getHighlightColor ()Ljava/lang/Integer;
+	public final fun getInitialState ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun getLoadingShowDelayMillis ()Ljava/lang/Long;
+	public final fun getMaskColor ()Ljava/lang/Integer;
+	public final fun getMinimumLoadingDurationMillis ()Ljava/lang/Long;
+	public final fun getPulseMaxAlpha ()Ljava/lang/Float;
+	public final fun getPulseMinAlpha ()Ljava/lang/Float;
+	public final fun getSkeletonSource ()Lcom/sfyc/ssl/SkeletonSource;
+	public final fun getTransitionDurationMillis ()Ljava/lang/Long;
+	public final fun getTransitionEffect ()Lcom/sfyc/ssl/StateTransitionEffect;
+	public final fun getUseBuiltInStateLayouts ()Ljava/lang/Boolean;
+	public final fun getUseSkeleton ()Ljava/lang/Boolean;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/sfyc/ssl/SslLayoutOptions {
+	public static final field Companion Lcom/sfyc/ssl/SslLayoutOptions$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonConfig;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonConfig;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Integer;
+	public final fun component10 ()Ljava/lang/Long;
+	public final fun component11 ()Ljava/lang/Long;
+	public final fun component12 ()Ljava/lang/Long;
+	public final fun component13 ()Ljava/lang/Boolean;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/Boolean;
+	public final fun component7 ()Ljava/lang/Boolean;
+	public final fun component8 ()Lcom/sfyc/ssl/SkeletonConfig;
+	public final fun component9 ()Lcom/sfyc/ssl/StateTransitionEffect;
+	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonConfig;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;)Lcom/sfyc/ssl/SslLayoutOptions;
+	public static synthetic fun copy$default (Lcom/sfyc/ssl/SslLayoutOptions;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Long;Ljava/lang/Boolean;Ljava/lang/Boolean;Lcom/sfyc/ssl/SkeletonConfig;Lcom/sfyc/ssl/StateTransitionEffect;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/sfyc/ssl/SslLayoutOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnnounceStateChanges ()Ljava/lang/Boolean;
+	public final fun getEmptyLayoutResId ()Ljava/lang/Integer;
+	public final fun getErrorLayoutResId ()Ljava/lang/Integer;
+	public final fun getErrorRetryViewId ()Ljava/lang/Integer;
+	public final fun getLoadingLayoutResId ()Ljava/lang/Integer;
+	public final fun getLoadingShowDelayMillis ()Ljava/lang/Long;
+	public final fun getMinimumLoadingDurationMillis ()Ljava/lang/Long;
+	public final fun getRetryClickThrottleMillis ()Ljava/lang/Long;
+	public final fun getRetryClicksEnabled ()Ljava/lang/Boolean;
+	public final fun getSkeletonConfig ()Lcom/sfyc/ssl/SkeletonConfig;
+	public final fun getTransitionDurationMillis ()Ljava/lang/Long;
+	public final fun getTransitionEffect ()Lcom/sfyc/ssl/StateTransitionEffect;
+	public final fun getUseSkeleton ()Ljava/lang/Boolean;
+	public fun hashCode ()I
+	public final fun isEmpty ()Z
+	public static final fun skeleton (IILcom/sfyc/ssl/SkeletonConfig;)Lcom/sfyc/ssl/SslLayoutOptions;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/sfyc/ssl/SslLayoutOptions$Companion {
+	public final fun skeleton (IILcom/sfyc/ssl/SkeletonConfig;)Lcom/sfyc/ssl/SslLayoutOptions;
+	public static synthetic fun skeleton$default (Lcom/sfyc/ssl/SslLayoutOptions$Companion;IILcom/sfyc/ssl/SkeletonConfig;ILjava/lang/Object;)Lcom/sfyc/ssl/SslLayoutOptions;
+}
+
+public final class com/sfyc/ssl/StateLayoutDiagnostics {
+	public fun <init> (Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/StateLayoutState;ZIIIILcom/sfyc/ssl/SkeletonFallbackReason;ZZZ)V
+	public synthetic fun <init> (Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/StateLayoutState;ZIIIILcom/sfyc/ssl/SkeletonFallbackReason;ZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun component10 ()Z
+	public final fun component11 ()Z
+	public final fun component2 ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun component3 ()Z
+	public final fun component4 ()I
+	public final fun component5 ()I
+	public final fun component6 ()I
+	public final fun component7 ()I
+	public final fun component8 ()Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public final fun component9 ()Z
+	public final fun copy (Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/StateLayoutState;ZIIIILcom/sfyc/ssl/SkeletonFallbackReason;ZZZ)Lcom/sfyc/ssl/StateLayoutDiagnostics;
+	public static synthetic fun copy$default (Lcom/sfyc/ssl/StateLayoutDiagnostics;Lcom/sfyc/ssl/StateLayoutState;Lcom/sfyc/ssl/StateLayoutState;ZIIIILcom/sfyc/ssl/SkeletonFallbackReason;ZZZILjava/lang/Object;)Lcom/sfyc/ssl/StateLayoutDiagnostics;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEffectRunning ()Z
+	public final fun getEffectiveUseSkeleton ()Z
+	public final fun getFallbackReason ()Lcom/sfyc/ssl/SkeletonFallbackReason;
+	public final fun getHasPendingWork ()Z
+	public final fun getInStateViewTransaction ()Z
+	public final fun getMaskBuildCount ()I
+	public final fun getMaskBytes ()I
+	public final fun getMaskHeight ()I
+	public final fun getMaskWidth ()I
+	public final fun getRenderedState ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun getRequestedState ()Lcom/sfyc/ssl/StateLayoutState;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/sfyc/ssl/StateLayoutState : java/lang/Enum {
+	public static final field CONTENT Lcom/sfyc/ssl/StateLayoutState;
+	public static final field EMPTY Lcom/sfyc/ssl/StateLayoutState;
+	public static final field ERROR Lcom/sfyc/ssl/StateLayoutState;
+	public static final field LOADING Lcom/sfyc/ssl/StateLayoutState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/StateLayoutState;
+	public static fun values ()[Lcom/sfyc/ssl/StateLayoutState;
+}
+
+public final class com/sfyc/ssl/StateSkeletonLayout : android/widget/FrameLayout {
+	public static final field Companion Lcom/sfyc/ssl/StateSkeletonLayout$Companion;
+	public static final field DEFAULT_LOADING_SHOW_DELAY_MILLIS J
+	public static final field DEFAULT_MINIMUM_LOADING_DURATION_MILLIS J
+	public static final field DEFAULT_RETRY_CLICK_THROTTLE_MILLIS J
+	public static final field DEFAULT_TRANSITION_DURATION_MILLIS J
+	public fun <init> (Landroid/content/Context;)V
+	public fun <init> (Landroid/content/Context;Landroid/util/AttributeSet;)V
+	public fun <init> (Landroid/content/Context;Landroid/util/AttributeSet;I)V
+	public synthetic fun <init> (Landroid/content/Context;Landroid/util/AttributeSet;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun addView (Landroid/view/View;ILandroid/view/ViewGroup$LayoutParams;)V
+	public final fun applyOptions (Lcom/sfyc/ssl/SslLayoutOptions;)V
+	public final fun clearStateViewCache (Lcom/sfyc/ssl/StateLayoutState;)V
+	public final fun diagnostics ()Lcom/sfyc/ssl/StateLayoutDiagnostics;
+	public final fun getAnnounceStateChanges ()Z
+	public final fun getErrorRetryViewId ()I
+	public final fun getLoadingShowDelayMillis ()J
+	public final fun getMinimumLoadingDurationMillis ()J
+	public final fun getRenderedState ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun getRequestedState ()Lcom/sfyc/ssl/StateLayoutState;
+	public final fun getRetryClickThrottleMillis ()J
+	public final fun getRetryClicksEnabled ()Z
+	public final fun getSkeletonConfig ()Lcom/sfyc/ssl/SkeletonConfig;
+	public final fun getStateView (Lcom/sfyc/ssl/StateLayoutState;)Landroid/view/View;
+	public final fun getTransitionDurationMillis ()J
+	public final fun getTransitionEffect ()Lcom/sfyc/ssl/StateTransitionEffect;
+	public final fun getUseSkeleton ()Z
+	public final fun invalidateSkeleton ()V
+	public fun onVisibilityAggregated (Z)V
+	public final fun render (Lcom/sfyc/ssl/StateLayoutState;)V
+	public final fun setAnnounceStateChanges (Z)V
+	public final fun setContentView (Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
+	public static synthetic fun setContentView$default (Lcom/sfyc/ssl/StateSkeletonLayout;Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;ILjava/lang/Object;)V
+	public final fun setErrorRetryViewId (I)V
+	public final fun setLoadingShowDelayMillis (J)V
+	public final fun setMinimumLoadingDurationMillis (J)V
+	public final fun setOnLoadingVisibilityChangedListener (Lcom/sfyc/ssl/OnLoadingVisibilityChangedListener;)V
+	public final fun setOnRenderedStateChangedListener (Lcom/sfyc/ssl/OnRenderedStateChangedListener;)V
+	public final fun setOnRetryClickListener (Landroid/view/View$OnClickListener;)V
+	public final fun setOnStateViewCreatedListener (Lcom/sfyc/ssl/OnStateViewCreatedListener;)V
+	public final fun setOnStateViewReleasedListener (Lcom/sfyc/ssl/OnStateViewReleasedListener;)V
+	public final fun setRetryClickThrottleMillis (J)V
+	public final fun setRetryClicksEnabled (Z)V
+	public final fun setSkeletonConfig (Lcom/sfyc/ssl/SkeletonConfig;)V
+	public final fun setSkeletonNodeConfig (ILcom/sfyc/ssl/SkeletonNodeConfig;)V
+	public final fun setStateDescription (Lcom/sfyc/ssl/StateLayoutState;Ljava/lang/CharSequence;)V
+	public final fun setStateViewLayout (Lcom/sfyc/ssl/StateLayoutState;I)V
+	public final fun setTransitionDurationMillis (J)V
+	public final fun setTransitionEffect (Lcom/sfyc/ssl/StateTransitionEffect;)V
+	public final fun setUseSkeleton (Z)V
+	public final fun showContent ()V
+	public final fun showEmpty ()V
+	public final fun showError ()V
+	public final fun showLoading ()V
+	public final fun updateStateView (Lcom/sfyc/ssl/StateLayoutState;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/sfyc/ssl/StateSkeletonLayout$Companion {
+}
+
+public final class com/sfyc/ssl/StateSkeletonLayout$SavedState : android/view/View$BaseSavedState {
+	public static final field CREATOR Lcom/sfyc/ssl/StateSkeletonLayout$SavedState$CREATOR;
+	public synthetic fun <init> (Landroid/os/Parcel;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Landroid/os/Parcelable;)V
+	public final fun getAngle ()I
+	public final fun getAnimationDuration ()J
+	public final fun getAnnounce ()Z
+	public final fun getCornerRadius ()F
+	public final fun getDescriptions ()Ljava/util/Map;
+	public final fun getDirectionOrdinal ()I
+	public final fun getEmptyResource ()I
+	public final fun getErrorResource ()I
+	public final fun getHighlightColor ()I
+	public final fun getLoadingResource ()I
+	public final fun getMaskColor ()I
+	public final fun getMaximumPixels ()J
+	public final fun getMinDuration ()J
+	public final fun getNodeRules ()Ljava/util/Map;
+	public final fun getPulseMax ()F
+	public final fun getPulseMin ()F
+	public final fun getRequestedOrdinal ()I
+	public final fun getRetryEnabled ()Z
+	public final fun getRetryThrottle ()J
+	public final fun getRetryViewId ()I
+	public final fun getShowDelay ()J
+	public final fun getSkeletonEffectOrdinal ()I
+	public final fun getSkeletonSourceOrdinal ()I
+	public final fun getSkeletonTemplateResId ()I
+	public final fun getTransitionDuration ()J
+	public final fun getTransitionOrdinal ()I
+	public final fun getUseSkeletonFlag ()Z
+	public final fun setAngle (I)V
+	public final fun setAnimationDuration (J)V
+	public final fun setAnnounce (Z)V
+	public final fun setCornerRadius (F)V
+	public final fun setDirectionOrdinal (I)V
+	public final fun setEmptyResource (I)V
+	public final fun setErrorResource (I)V
+	public final fun setHighlightColor (I)V
+	public final fun setLoadingResource (I)V
+	public final fun setMaskColor (I)V
+	public final fun setMaximumPixels (J)V
+	public final fun setMinDuration (J)V
+	public final fun setPulseMax (F)V
+	public final fun setPulseMin (F)V
+	public final fun setRequestedOrdinal (I)V
+	public final fun setRetryEnabled (Z)V
+	public final fun setRetryThrottle (J)V
+	public final fun setRetryViewId (I)V
+	public final fun setShowDelay (J)V
+	public final fun setSkeletonEffectOrdinal (I)V
+	public final fun setSkeletonSourceOrdinal (I)V
+	public final fun setSkeletonTemplateResId (I)V
+	public final fun setTransitionDuration (J)V
+	public final fun setTransitionOrdinal (I)V
+	public final fun setUseSkeletonFlag (Z)V
+	public fun writeToParcel (Landroid/os/Parcel;I)V
+}
+
+public final class com/sfyc/ssl/StateSkeletonLayout$SavedState$CREATOR : android/os/Parcelable$Creator {
+	public fun createFromParcel (Landroid/os/Parcel;)Lcom/sfyc/ssl/StateSkeletonLayout$SavedState;
+	public synthetic fun createFromParcel (Landroid/os/Parcel;)Ljava/lang/Object;
+	public fun newArray (I)[Lcom/sfyc/ssl/StateSkeletonLayout$SavedState;
+	public synthetic fun newArray (I)[Ljava/lang/Object;
+}
+
+public final class com/sfyc/ssl/StateSkeletonLayoutDefaults {
+	public static final field INSTANCE Lcom/sfyc/ssl/StateSkeletonLayoutDefaults;
+	public final fun install (Lcom/sfyc/ssl/SslGlobalDefaults;)V
+	public final fun reset ()V
+}
+
+public final class com/sfyc/ssl/StateTransitionEffect : java/lang/Enum {
+	public static final field CROSSFADE Lcom/sfyc/ssl/StateTransitionEffect;
+	public static final field NONE Lcom/sfyc/ssl/StateTransitionEffect;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/sfyc/ssl/StateTransitionEffect;
+	public static fun values ()[Lcom/sfyc/ssl/StateTransitionEffect;
+}
+

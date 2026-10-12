@@ -1,6 +1,7 @@
 package com.sfyc.ssl.internal
 
 import com.sfyc.ssl.StateLayoutState
+import com.sfyc.ssl.StateSkeletonLayout
 import com.sfyc.ssl.internal.time.Cancellable
 import com.sfyc.ssl.internal.time.MonotonicClock
 import com.sfyc.ssl.internal.time.TaskScheduler
@@ -310,10 +311,21 @@ internal class StateCoordinator(
     private fun isCurrent(token: Int): Boolean = token == generation
 
     companion object {
-        /** 默认加载显示延迟：0ms，首次加载立即反馈。 */
-        const val DEFAULT_LOADING_SHOW_DELAY_MILLIS: Long = 0L
+        /**
+         * 默认加载显示延迟：0ms，首次加载立即反馈。
+         *
+         * 真源在 [StateSkeletonLayout] 的公开常量上，此处只做别名转发，
+         * 避免同一默认值在库内出现第二个字面量（历史上三处各写一遍）。
+         */
+        const val DEFAULT_LOADING_SHOW_DELAY_MILLIS: Long =
+            StateSkeletonLayout.DEFAULT_LOADING_SHOW_DELAY_MILLIS
 
-        /** 默认最短展示时间：300ms，避免快速请求引起闪烁。 */
-        const val DEFAULT_MINIMUM_LOADING_DURATION_MILLIS: Long = 300L
+        /**
+         * 默认最短展示时间：300ms，避免快速请求引起闪烁。
+         *
+         * 真源同上，见 [StateSkeletonLayout.DEFAULT_MINIMUM_LOADING_DURATION_MILLIS]。
+         */
+        const val DEFAULT_MINIMUM_LOADING_DURATION_MILLIS: Long =
+            StateSkeletonLayout.DEFAULT_MINIMUM_LOADING_DURATION_MILLIS
     }
 }

@@ -42,6 +42,9 @@ import androidx.annotation.Px
  * @property transitionEffect 状态切换过渡效果。
  * @property transitionDurationMillis 状态切换时长，单位毫秒，不得小于 0。
  * @property announceStateChanges 进入 Loading/Empty/Error 时是否做一次性无障碍播报。
+ * @property useBuiltInStateLayouts 未配置 `ssl_emptyLayout` / `ssl_errorLayout` 时，
+ *   是否回退到库内置的空态 / 错误态布局。默认 `true`（内置布局可用）；
+ *   设为 `false` 时恢复严格行为——未配置即抛异常，不显示任何兜底页面。
  */
 data class SslGlobalDefaults(
     val useSkeleton: Boolean? = null,
@@ -61,4 +64,5 @@ data class SslGlobalDefaults(
     val transitionEffect: StateTransitionEffect? = null,
     val transitionDurationMillis: Long? = null,
     val announceStateChanges: Boolean? = null,
+    val useBuiltInStateLayouts: Boolean? = null,
 )

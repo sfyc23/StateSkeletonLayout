@@ -3,10 +3,15 @@
 plugins {
     alias(libs.plugins.agp.library)
     alias(libs.plugins.kotlin.android)
+    // 生成发布制品的 javadoc jar。0.0.1 已发布且无法追溯补发，
+    // 从下一个版本起制品会带上 API 文档。
+    alias(libs.plugins.dokka)
+    // 截图回归：骨架是纯视觉功能，用 Robolectric 渲染比对像素。
+    alias(libs.plugins.roborazzi)
     `maven-publish`
 }
 
-group = "com.github.sfyc23"
+group = providers.gradleProperty("libraryGroup").get()
 version = providers.gradleProperty("libraryVersion").get()
 
 android {
@@ -72,6 +77,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.junit.rule)
 
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.test.core)
@@ -79,11 +86,31 @@ dependencies {
     androidTestImplementation(libs.test.ext.junit)
 }
 
+/**
+ * 把 Dokka 的 HTML 输出打成 javadoc jar。
+ *
+ * 不用 `withJavadocJar()`：AGP 的该 API 期望真正的 Javadoc 格式产物，而
+ * Dokka 2.x 的 javadoc 格式插件（`org.jetbrains.dokka.javadoc`）在本工程的
+ * 仓库列表里解析不到。HTML 包同样满足"带 API 文档的 doc 制品"这一目的。
+ *
+ * **必须声明在 `publishing {}` 之前**：`publishing` 块在配置期就会读取这个属性，
+ * 若用 `by tasks.registering` 且定义在其后，读到的委托尚未赋值，会抛
+ * "Parameter specified as non-null is null"。
+ */
+val dokkaJavadocJar: TaskProvider<Jar> = tasks.register<Jar>("dokkaJavadocJar") {
+    group = "documentation"
+    description = "把 Dokka HTML 输出打包为发布用的 -javadoc.jar"
+    archiveClassifier.set("javadoc")
+    from(layout.buildDirectory.dir("dokka/html"))
+    // 声明任务依赖保证顺序，避免发布出空 doc 包。
+    dependsOn("dokkaGeneratePublicationHtml")
+}
+
 publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = project.group.toString()
-            artifactId = "StateSkeletonLayout"
+            artifactId = providers.gradleProperty("libraryArtifactId").get()
             version = project.version.toString()
 
             pom {
@@ -96,15 +123,37 @@ publishing {
                         url.set("https://www.apache.org/licenses/LICENSE-2.0")
                     }
                 }
+                // developers 与 scm 是 Maven Central 的必填项。当前走 JitPack，
+                // 缺失不会导致发布失败，但补上零成本，为将来可能的 Central 发布留路。
+                // 同时让 IDE 与制品浏览页能正确显示来源与仓库地址。
+                developers {
+                    developer {
+                        id.set("sfyc23")
+                        name.set("sfyc23")
+                        email.set("sfyc23@gmail.com")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/sfyc23/StateSkeletonLayout")
+                    connection.set("scm:git:https://github.com/sfyc23/StateSkeletonLayout.git")
+                    developerConnection.set("scm:git:git@github.com:sfyc23/StateSkeletonLayout.git")
+                }
             }
 
             // AGP 在项目评估完成后才创建 Release 发布组件。
             afterEvaluate {
                 from(components["release"])
             }
+
+            // Dokka 2.x 把 javadoc 输出格式拆成独立插件，该插件在本地仓库不可解析；
+            // 这里把 Dokka 生成的 HTML 打成标准的 -javadoc.jar 附到制品上。
+            // 消费端（IDE、制品浏览页）要的就是一个带 classifier 的 doc 包，
+            // HTML 内容完全可用；0.0.1 已发布且无法追溯补发，从下个版本起生效。
+            artifact(dokkaJavadocJar)
         }
     }
 }
+
 
 // JitPack 重写 Gradle 元数据时会丢失源码包 classifier，改用 Maven POM 与标准源码包发布。
 tasks.withType<org.gradle.api.publish.tasks.GenerateModuleMetadata>().configureEach {

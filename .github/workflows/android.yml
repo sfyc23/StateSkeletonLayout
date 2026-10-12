@@ -4,22 +4,52 @@ on:
   push:
   pull_request:
 
+# 权限最小化：整个仓库只做构建验证，不需要写任何东西。
+# 不显式声明的话，Actions 会按仓库/组织默认设置授予令牌权限，
+# 一旦默认是 read-write，第三方 action 被投毒时可以反过来改代码、发 release。
+# 这里显式收窄到只读，把权限面固定死。
+permissions:
+  contents: read
+
+# 并发控制：同一个分支上 push 和 pull_request 常常同时触发，
+# 两次跑的其实是同一份代码，白烧一份 windows runner 时间，还会互相抢 Gradle 缓存。
+# 按 workflow + ref 归组后，新的一轮直接取消上一轮，只保留最新提交的结果。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: windows-latest
+
+    # 超时兜底：Gradle 卡在依赖下载或守护进程上时不至于把 runner 占满 6 小时
+    # （windows 分钟数是 2 倍计费），45 分钟足够跑完当前全部任务。
+    timeout-minutes: 45
+
     steps:
       - uses: actions/checkout@v4
+
+      # wrapper 校验：gradle-wrapper.jar 是随仓库提交的二进制，
+      # checkout 出来的内容要么被篡改要么无损，光靠人眼看 diff 是看不出来的。
+      # 这个 action 会拿官方维护的已知哈希表比对，杜绝被替换过的 wrapper 在 CI 里执行。
+      # 放在 setup-java 之前，是为了让校验失败时尽早终止，不浪费 JDK 安装和缓存恢复的时间。
+      - uses: gradle/actions/wrapper-validation@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
+
       - name: Verify library and sample
         shell: pwsh
         run: |
           .\gradlew.bat `
             :stateskeletonlayout:testDebugUnitTest `
+            :stateskeletonlayout:verifyRoborazziDebug `
+            :stateskeletonlayout:apiCheck `
             :stateskeletonlayout:lintRelease `
+            :stateskeletonlayout:lintDebug `
             :stateskeletonlayout:assembleDebug `
             :stateskeletonlayout:assembleRelease `
             :stateskeletonlayout:publishReleasePublicationToMavenLocal `
@@ -30,3 +60,34 @@ jobs:
             :sample:assembleDebug `
             :sample:assembleRelease `
             :sample:assembleDebugAndroidTest
+
+      # 依赖校验元数据变更需人工确认：该文件是"允许解析哪些制品"的白名单，
+      # 一次无意的重新生成可能把新的 group 或放宽的规则一起带进来。
+      # 这里在 CI 里显式标出"本次改动是否动了它"，让 reviewer 不会漏看。
+      - name: Flag verification-metadata changes
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          $changed = git diff --name-only origin/${{ github.base_ref }}...HEAD -- gradle/verification-metadata.xml
+          if ($changed) {
+            Write-Host "::warning file=gradle/verification-metadata.xml::依赖校验元数据在本次改动中发生变化，需要人工确认新增/放宽的规则。"
+          }
+
+      # 产物留档：CI 失败时 runner 会被立刻回收，测试报告和 lint HTML 一起消失，
+      # 只剩日志里的几行摘要，定位问题要本地重跑一遍。
+      # 用 if: always() 保证失败路径也上传——恰恰是失败的时候才最需要这份报告。
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-reports
+          # 两个模块分开列，库和示例都要收；
+          # lint-results*.html 用通配是为了同时覆盖 lint-results.html 和 lint-results-debug.html 等变体。
+          # 某个模块没产生报告（例如任务在它之前就挂了）时按 ignore 处理，
+          # 否则上传步骤自己报错，反而掩盖了真正的构建失败。
+          if-no-files-found: ignore
+          path: |
+            stateskeletonlayout/build/reports/tests/**
+            stateskeletonlayout/build/reports/lint-results*.html
+            sample/build/reports/tests/**
+            sample/build/reports/lint-results*.html

@@ -9,6 +9,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -191,15 +192,50 @@ class StateSkeletonLayoutViewTest {
     }
 
     @Test
-    fun `请求未配置状态时快速失败`() {
-        // 业务意图：缺布局时抛可定位异常，不显示无反馈空白页。
+    fun `未配置状态页时回退到内置布局`() {
+        // 业务意图：接入一个全新页面时不应强制宿主先写两份状态页 XML。
+        // 未配置 ssl_emptyLayout / ssl_errorLayout 时用库内置兜底页面，
+        // 而不是抛异常或显示空白。
         val layout = StateSkeletonLayout(activity)
         layout.setContentView(TextView(activity))
+
+        layout.render(StateLayoutState.EMPTY)
+
+        assertEquals(StateLayoutState.EMPTY, layout.renderedState)
+        assertNotNull(layout.getStateView(StateLayoutState.EMPTY))
+    }
+
+    @Test
+    fun `内置错误页自带重试入口且无需宿主配置`() {
+        // 业务意图：兜底错误页上的重试按钮应自动接入统一重试回调。
+        val layout = StateSkeletonLayout(activity)
+        layout.setContentView(TextView(activity))
+        val clicks = AtomicReference(0)
+        layout.setOnRetryClickListener { clicks.set(clicks.get() + 1) }
+        attachAndLayout(layout)
+
+        layout.render(StateLayoutState.ERROR)
+        val errorView = layout.getStateView(StateLayoutState.ERROR)
+        assertTrue(errorView!!.findViewById<View>(R.id.ssl_builtin_state_retry).performClick())
+
+        assertEquals(1, clicks.get())
+    }
+
+    @Test
+    fun `关闭内置状态页开关时恢复严格失败`() {
+        // 业务意图：需要"缺配置立即暴露"的工程可以关掉兜底，恢复可定位异常。
+        StateSkeletonLayoutDefaults.install(SslGlobalDefaults(useBuiltInStateLayouts = false))
         try {
-            layout.render(StateLayoutState.EMPTY)
-            fail("未配置 emptyLayout 应抛异常")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("ssl_emptyLayout"))
+            val layout = StateSkeletonLayout(activity)
+            layout.setContentView(TextView(activity))
+            try {
+                layout.render(StateLayoutState.EMPTY)
+                fail("关闭内置布局后，未配置 emptyLayout 应抛异常")
+            } catch (e: IllegalArgumentException) {
+                assertTrue(e.message!!.contains("ssl_emptyLayout"))
+            }
+        } finally {
+            StateSkeletonLayoutDefaults.reset()
         }
     }
 
