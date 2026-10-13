@@ -19,7 +19,7 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 
 ## 接入方式
 
-### JitPack（0.0.2）
+### JitPack（0.0.3）
 
 本工程通过 JitPack 发布库模块的 Release AAR、源码包和 API 文档包，示例应用不进入发布制品。
 在宿主工程的 `settings.gradle.kts` 中加入仓库：
@@ -42,11 +42,11 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.2")
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.3")
 }
 ```
 
-构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.2)。
+构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.3)。
 首次请求该版本时 JitPack 会构建制品，只有构建成功后才能解析依赖。
 
 从 `0.0.1` 升级时，需要重新编译应用及使用 `SslGlobalDefaults` / `StateLayoutDiagnostics` 的依赖库。
@@ -840,7 +840,7 @@ AGP 无法推断引用关系，需要自行加规则：
 ### 发布流程
 
 版本号在根目录 `gradle.properties` 的 `libraryVersion` 中统一维护，库 POM 与示例应用读取同一值。
-当前版本为 `0.0.2`，Git 标签也使用 `0.0.2`（不加 `v` 前缀）。
+当前版本为 `0.0.3`，Git 标签也使用 `0.0.3`（不加 `v` 前缀）。
 
 发布坐标同样集中在 `gradle.properties`：`libraryGroup`（`com.github.sfyc23`）、
 `libraryArtifactId`（`StateSkeletonLayout`）。示例的 `sampleVersionCode` 与 `libraryVersion`
@@ -860,11 +860,11 @@ AGP 无法推断引用关系，需要自行加规则：
 
    ```powershell
    git push origin main
-   git tag -a 0.0.2 -m "Release 0.0.2"
-   git push origin 0.0.2
+   git tag -a 0.0.3 -m "Release 0.0.3"
+   git push origin 0.0.3
    ```
 
-3. 创建对应标签的 GitHub Release，在 JitPack 项目页面请求构建，检查状态和日志；成功后核对 POM、AAR、源码包与 API 文档包。
+3. 在 JitPack 项目页面请求构建，检查状态和日志；成功后核对 POM、AAR、源码包与 API 文档包，并验证接入项目的依赖解析与构建，再创建对应标签的 GitHub Release。
 
 JitPack 使用 Java 17，通过根目录 `jitpack.yml` 调用库模块的 Maven 发布任务。
 发布采用 Maven POM 与标准 `-sources.jar`；为兼容 JitPack 的源码文件名处理，不发布 Gradle `.module` 元数据。

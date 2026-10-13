@@ -16,7 +16,7 @@ Callers of the original module and legacy package need to update dependencies, i
 
 ## Installation
 
-### JitPack (0.0.2)
+### JitPack (0.0.3)
 
 This project publishes the library module's Release AAR, source jar, and API documentation jar via JitPack. The sample app is not included in the published artifacts.
 Add the repository in the host project's `settings.gradle.kts`:
@@ -39,11 +39,11 @@ Then add the dependency in the app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.2")
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.3")
 }
 ```
 
-See the [JitPack Project Page](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.2) for build status and logs.
+See the [JitPack Project Page](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.3) for build status and logs.
 JitPack builds artifacts on the first request for a version; dependencies can only be resolved after the build succeeds.
 
 When upgrading from `0.0.1`, recompile the app and any libraries that use `SslGlobalDefaults` or `StateLayoutDiagnostics`.
@@ -787,7 +787,7 @@ rules yourself:
 ### Release Steps
 
 The version number is centrally maintained in `gradle.properties` under `libraryVersion`; both library POM and sample app read the same value.
-Current version is `0.0.2`, and Git tags also use `0.0.2` (without `v` prefix).
+Current version is `0.0.3`, and Git tags also use `0.0.3` (without `v` prefix).
 
 1. After updating the version, run library and sample tests, Lint, Release builds, and verify local Maven publication:
 
@@ -799,11 +799,11 @@ Current version is `0.0.2`, and Git tags also use `0.0.2` (without `v` prefix).
 
    ```powershell
    git push origin main
-   git tag -a 0.0.2 -m "Release 0.0.2"
-   git push origin 0.0.2
+   git tag -a 0.0.3 -m "Release 0.0.3"
+   git push origin 0.0.3
    ```
 
-3. Create a GitHub Release for the tag, then request a build on the JitPack project page and inspect its status and logs; verify the POM, AAR, source jar, and API documentation jar after the build succeeds.
+3. Request a build on the JitPack project page and inspect its status and logs. Once it succeeds, verify the POM, AAR, source jar, and API documentation jar, then verify dependency resolution and builds in a consumer project before creating the GitHub Release for the tag.
 
 JitPack runs Java 17 and invokes the library Maven publication task via `jitpack.yml` in the root directory.
 Publications use Maven POM and standard `-sources.jar`; to maintain compatibility with JitPack's source file handling, Gradle `.module` metadata is not published.
