@@ -151,4 +151,23 @@
 
     <string name="demo_list_skeleton_hint">一个骨架实例覆盖整屏多行，列表 Adapter 不被替换</string>
     <string name="demo_list_skeleton_note">为什么推荐整屏模板而不是每个 item 一个实例：每个实例会各自构建一张全尺寸 ALPHA_8 遮罩，8 行列表就是 8 份逐像素的遮罩内存，随行数线性增长；每实例还各自订阅动画时钟，库已把动画改为共享时钟，但遮罩内存仍是每实例一份。本页用 1 个实例 + 静态 8 行模板达到同样效果，内存占用与列表长度无关。</string>
+
+    <string name="resume_hint">上半 500ms 骨架后出个人介绍，下半按场景骨架后展开工作经历；整页单列表滚动</string>
+    <string name="resume_candidate">候选人：%1$s（点击切换）</string>
+    <string name="resume_reload_work">重新请求工作经历</string>
+    <string name="resume_highlights_title">核心技能</string>
+    <string name="resume_section_title">工作经历</string>
+    <string name="resume_section_syncing">同步中…</string>
+    <string name="resume_section_count">共 %1$d 段经历</string>
+    <string name="resume_section_empty">暂无经历</string>
+    <string name="resume_section_error">加载失败</string>
+    <string name="resume_empty_title">暂无工作经历记录</string>
+    <string name="resume_empty_desc">该候选人暂无工作经历数据</string>
+    <string name="resume_error_title">工作经历加载失败</string>
+    <string name="resume_error_desc">请检查网络后重试</string>
+    <string name="resume_scenario_success">正常加载（4 段）</string>
+    <string name="resume_scenario_empty">经历为空</string>
+    <string name="resume_scenario_error_once">首次失败后成功</string>
+    <string name="resume_scenario_error">持续失败</string>
+    <string name="resume_status">%1$s · %2$d ms · dataset %3$d\n上半 %4$s · 下半 %5$s</string>
 </resources>

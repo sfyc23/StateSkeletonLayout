@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.sfyc.ssl.StateSkeletonLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/work_state_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:ssl_emptyLayout="@layout/state_resume_work_empty"
+    app:ssl_errorLayout="@layout/state_resume_work_error"
+    app:ssl_errorRetryViewId="@id/demo_retry"
+    app:ssl_initialState="loading"
+    app:ssl_useSkeleton="true"
+    app:ssl_skeletonEffect="shimmer"
+    app:ssl_skeletonSource="content"
+    app:ssl_loadingShowDelay="150"
+    app:ssl_minLoadingDuration="600">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/demo_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <View
+                android:id="@+id/resume_work_logo_1"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/demo_avatar_circle" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <View
+                    android:layout_width="160dp"
+                    android:layout_height="16dp"
+                    android:background="@color/demo_avatar_placeholder" />
+
+                <View
+                    android:layout_width="220dp"
+                    android:layout_height="12dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@color/demo_avatar_placeholder" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:id="@+id/resume_work_divider_1"
+            android:layout_width="match_parent"
+            android:layout_height="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/demo_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <View
+                android:id="@+id/resume_work_logo_2"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/demo_avatar_circle" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <View
+                    android:layout_width="160dp"
+                    android:layout_height="16dp"
+                    android:background="@color/demo_avatar_placeholder" />
+
+                <View
+                    android:layout_width="220dp"
+                    android:layout_height="12dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@color/demo_avatar_placeholder" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:id="@+id/resume_work_divider_2"
+            android:layout_width="match_parent"
+            android:layout_height="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/demo_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <View
+                android:id="@+id/resume_work_logo_3"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/demo_avatar_circle" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <View
+                    android:layout_width="160dp"
+                    android:layout_height="16dp"
+                    android:background="@color/demo_avatar_placeholder" />
+
+                <View
+                    android:layout_width="220dp"
+                    android:layout_height="12dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@color/demo_avatar_placeholder" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.sfyc.ssl.StateSkeletonLayout>

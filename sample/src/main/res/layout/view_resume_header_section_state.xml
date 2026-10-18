@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.sfyc.ssl.StateSkeletonLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/header_state_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:ssl_initialState="loading"
+    app:ssl_useSkeleton="true"
+    app:ssl_skeletonEffect="shimmer"
+    app:ssl_skeletonSource="content"
+    app:ssl_loadingShowDelay="100"
+    app:ssl_minLoadingDuration="300">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/demo_card"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/resume_head_avatar"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/demo_avatar_circle" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <View
+                    android:id="@+id/resume_head_name"
+                    android:layout_width="140dp"
+                    android:layout_height="18dp"
+                    android:background="@color/demo_avatar_placeholder" />
+
+                <View
+                    android:id="@+id/resume_head_meta"
+                    android:layout_width="180dp"
+                    android:layout_height="12dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@color/demo_avatar_placeholder" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:id="@+id/resume_head_bio"
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            android:layout_marginTop="12dp"
+            android:background="@color/demo_avatar_placeholder" />
+
+        <View
+            android:id="@+id/resume_head_skills"
+            android:layout_width="220dp"
+            android:layout_height="12dp"
+            android:layout_marginTop="6dp"
+            android:background="@color/demo_avatar_placeholder" />
+    </LinearLayout>
+</com.sfyc.ssl.StateSkeletonLayout>

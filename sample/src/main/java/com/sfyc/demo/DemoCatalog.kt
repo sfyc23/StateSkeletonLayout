@@ -16,6 +16,7 @@ import com.sfyc.demo.lifecycle.LifecycleDemoFragment
 import com.sfyc.demo.listskeleton.ListSkeletonDemoFragment
 import com.sfyc.demo.lottie.LottieLoadingFragment
 import com.sfyc.demo.network.FeedDemoFragment
+import com.sfyc.demo.resume.ResumeDemoFragment
 import com.sfyc.demo.rapid.RapidStateFragment
 import com.sfyc.demo.recycler.RecyclerSkeletonFragment
 import com.sfyc.demo.svga.SvgaLoadingFragment
@@ -54,5 +55,6 @@ object DemoCatalog {
         Entry("非法值校验", "安装非法全局默认后创建实例，观察含属性名的 IllegalArgumentException", ::InvalidValueFragment),
         Entry("骨架诊断", "diagnostics() 快照、像素预算降级与状态页缓存清理", ::DiagnosticsDemoFragment),
         Entry("网络多类型", "刷新、分页与多类型列表的骨架 / 空 / 错误示例", ::FeedDemoFragment),
+        Entry("简历局部骨架", "上半 500ms 骨架后出介绍，下半工作经历局部骨架 / 空 / 错误", ::ResumeDemoFragment),
     )
 }
