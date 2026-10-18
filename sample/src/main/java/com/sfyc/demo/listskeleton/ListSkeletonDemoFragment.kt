@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sfyc.demo.DemoLog
@@ -40,7 +41,7 @@ class ListSkeletonDemoFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentListSkeletonBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

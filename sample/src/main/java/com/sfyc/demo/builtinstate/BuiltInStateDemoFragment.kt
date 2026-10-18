@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import com.sfyc.ssl.StateLayoutState
 import com.sfyc.demo.DemoLog
 import com.sfyc.demo.insets.applyDemoSystemBarPadding
@@ -41,7 +42,7 @@ class BuiltInStateDemoFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentBuiltinStateBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

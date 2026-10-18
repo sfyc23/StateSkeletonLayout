@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -49,7 +50,7 @@ class SvgaLoadingFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val created = FragmentSvgaBinding.inflate(inflater, container, false)
         binding = created
-        return created.root
+        return wrapDemoPage(inflater, created.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import com.sfyc.demo.DemoLog
 import com.sfyc.demo.defaults.toHexColor
 import com.sfyc.demo.insets.applyDemoSystemBarPadding
@@ -43,7 +44,7 @@ class ConfigChangeDemoFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentConfigChangeBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

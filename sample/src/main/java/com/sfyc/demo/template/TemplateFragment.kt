@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import androidx.lifecycle.lifecycleScope
 import com.sfyc.demo.DemoLog
 import com.sfyc.demo.insets.applyDemoSystemBarPadding
@@ -29,7 +30,7 @@ class TemplateFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentTemplateBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import androidx.core.view.OneShotPreDrawListener
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.createSavedStateHandle
@@ -76,7 +77,7 @@ class FeedDemoFragment : Fragment() {
         val created = FragmentNetworkFeedBinding.inflate(inflater, container, false)
         binding = created
         viewSequence++
-        return created.root
+        return wrapDemoPage(inflater, created.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

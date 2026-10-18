@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,7 +38,7 @@ class RecyclerSkeletonFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentRecyclerBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

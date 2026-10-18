@@ -66,8 +66,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openDemo(entry: DemoCatalog.Entry) {
+        val fragment = entry.factory()
+        val args = fragment.arguments ?: Bundle()
+        args.putString(ARG_PAGE_TITLE, entry.title)
+        fragment.arguments = args
         supportFragmentManager.beginTransaction()
-            .replace(R.id.demo_detail_container, entry.factory())
+            .replace(R.id.demo_detail_container, fragment)
             .addToBackStack(entry.title)
             .commit()
         binding.demoDetailContainer.visibility = View.VISIBLE

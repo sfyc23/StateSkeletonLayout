@@ -38,6 +38,7 @@
     <string name="demo_app_name">StateSkeleton 演示</string>
     <string name="demo_catalog_title">StateSkeletonLayout 示例</string>
     <string name="demo_catalog_subtitle">点击条目进入对应演示；返回键回到本页</string>
+    <string name="demo_page_back">返回</string>
 
     <string name="demo_btn_loading">Loading</string>
     <string name="demo_btn_content">Content</string>

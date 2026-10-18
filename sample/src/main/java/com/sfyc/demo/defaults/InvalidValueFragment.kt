@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import com.sfyc.ssl.SkeletonSource
 import com.sfyc.ssl.SslGlobalDefaults
 import com.sfyc.ssl.StateSkeletonLayoutDefaults
@@ -29,7 +30,7 @@ class InvalidValueFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentDefaultsInvalidBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

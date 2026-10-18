@@ -42,6 +42,7 @@
     <string name="demo_app_name">StateSkeleton Demo</string>
     <string name="demo_catalog_title">StateSkeletonLayout samples</string>
     <string name="demo_catalog_subtitle">Tap an entry to open its demo; back returns to this page</string>
+    <string name="demo_page_back">Back</string>
 
     <string name="demo_btn_loading">Loading</string>
     <string name="demo_btn_content">Content</string>

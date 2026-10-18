@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import com.sfyc.ssl.SkeletonFallbackReason
 import com.sfyc.ssl.StateLayoutState
 import com.sfyc.demo.DemoLog
@@ -36,7 +37,7 @@ class DiagnosticsDemoFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentDiagnosticsBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

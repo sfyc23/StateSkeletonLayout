@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.fragment.app.Fragment
+import com.sfyc.demo.wrapDemoPage
 import com.sfyc.ssl.StateSkeletonLayout
 import com.sfyc.ssl.StateSkeletonLayoutDefaults
 import com.sfyc.demo.DemoLog
@@ -29,7 +30,7 @@ class GlobalDefaultsFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentDefaultsGlobalBinding.inflate(inflater, container, false)
-        return binding.root
+        return wrapDemoPage(inflater, binding.root)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
