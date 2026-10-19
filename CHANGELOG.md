@@ -2,6 +2,54 @@
 
 记录库模块、示例应用和公开文档的变更。
 
+## Unreleased（条目拼装模板 T2）
+
+### 库模块 `:stateskeletonlayout`
+
+#### 新增公开 API
+
+- `SkeletonItemSpec(layoutResId, count = 8, binder = null)`：单种条目的离屏拼装声明；
+  `count` 必须大于 0，`binder` 为空表示该布局自身已有固定尺寸。
+- `StateSkeletonLayout.skeletonItems` / `setSkeletonItemTemplate()` / `clearSkeletonItems()`：
+  T2 条目拼装模板的运行时入口。`setSkeletonItemTemplate` 原子建立
+  `TEMPLATE + 条目` 组合；`skeletonItems = null`（或空列表）表示未使用 T2。
+- `SslLayoutOptions.skeletonItems`：程序化批量配置新增同名字段，`null` 跳过；
+  与 `skeletonConfig` 同时出现时成对校验、成对提交。
+- XML 属性 `ssl_skeletonItemLayout`（reference）/ `ssl_skeletonItemCount`（integer，默认 `8`）：
+  单类型快捷声明，不参与 Global 覆盖，Theme 层可提供。
+
+#### 行为变更
+
+- T1（整张模板 `ssl_skeletonTemplate`）与 T2（条目拼装 `skeletonItems`）互斥：
+  并存时抛 `IllegalArgumentException`（错误信息含双方属性名），失败方配置整体回滚、原值保留。
+- `skeletonItems` 非空仅 `SkeletonSource.TEMPLATE` 下有效；`source=CONTENT` 配 items
+  在 setter 即抛异常。`TEMPLATE` 暂无模板的中间态允许存在（程序化分步配置时），
+  完整性在 XML 构造期严格校验、运行时渲染入口（`preflight`）兜底。
+- `SkeletonConfig(source=TEMPLATE)` 允许暂不带 `templateLayoutResId`（此前构造即抛异常）；
+  缺模板的失败改由控件统一校验在构造 / 渲染时抛出，错误信息不变。
+- `SavedState` 格式升至 v3：新增条目布局与条数两份列表；binder 不可序列化，
+  恢复后置空并打 Debug 日志（`StateSkeletonLayout` tag），宿主需在重建后重新设置占位绑定。
+- 恢复与配置变更：条目拼装宿主按 `configuration.hashCode()` 失效重拼；
+  昼夜切换后 Loading 不中断、不退化为空几何。
+
+#### 测试
+
+- 库单测新增 5 个测试类（实现方案 12.1 节）：`SkeletonItemSpecTest`（纯 JVM）、
+  `SkeletonItemsValidationTest`（互斥/回滚/属性名）、`ItemAssembledTemplateTest`
+  （8 行 24 几何、空文本失败指引、binder 逐条调用）、`ItemAssembledConfigChangeTest`
+  （昼夜重建、SavedState 往返 + binder 置空日志）、`ItemAssembledScreenshotTest`
+  （T1/T2 双 Roborazzi 基线 `skeleton_t1_item_rows.png` / `skeleton_t2_item_reuse.png`）。
+- 既有 `SkeletonConfigTest` 同步放宽：TEMPLATE 缺模板构造不再抛异常（完整性改由控件校验）。
+
+### 示例应用 `:sample`
+
+- 新增「条目复用骨架」演示页（`recycler/ItemReuseSkeletonFragment` + `fragment_item_reuse_skeleton.xml`，
+  `DemoCatalog` 入口 +1）：同一 `RecyclerView` + 同一份 `item_profile_row`，
+  一键切换 T2（复用 + 占位 binder）与 T1（手写模板）对比；业务 Adapter 全程不被替换。
+- 新增 `ItemReuseSkeletonFragmentTest`（5 项）：XML 声明解析、T1/T2 切换、Adapter 不变。
+- 中英文案各新增 `demo_item_reuse_*` 4 条；新增页仅引入与既有页同类的 ButtonStyle warning，
+  无新增 Lint Error。
+
 ## 0.0.3（2026-10-13）
 
 - Gradle Wrapper 改用官方分发地址，修复 JitPack 构建从腾讯镜像下载 Gradle 时返回 HTTP 616 的问题。

@@ -15,7 +15,11 @@ import android.content.Context
  * 它们是状态协调器的参数，见 [StateSkeletonLayout]。
  *
  * @property source 骨架形状来源：内容取形或独立模板。
- * @property templateLayoutResId 独立模板布局资源，仅 [SkeletonSource.TEMPLATE] 时必填。
+ * @property templateLayoutResId 整张独立模板布局资源（T1）。
+ *   `TEMPLATE` 下 T1 与条目拼装模板（T2，见 [SkeletonItemSpec]）互斥、
+ *   且至少需要其中一种：本类只校验“非零即有效布局”的形式合法性，
+ *   “TEMPLATE 下两者至少其一”的完整性由 [StateSkeletonLayout] 在
+ *   构造 / setter / preflight 统一校验（T2 的条目声明不在本类中）。
  * @property effect 骨架效果，三者互斥。
  * @property maskColor 骨架基础颜色。
  * @property highlightColor 流光高亮颜色（仅 [SkeletonEffect.SHIMMER] 使用）。
@@ -63,8 +67,11 @@ data class SkeletonConfig(
             "SkeletonConfig.pulseMinAlpha 不得大于 pulseMaxAlpha，" +
                 "当前=($pulseMinAlpha, $pulseMaxAlpha)"
         }
-        require(source != SkeletonSource.TEMPLATE || (templateLayoutResId != null && templateLayoutResId != 0)) {
-            "SkeletonConfig.source 为 TEMPLATE 时必须提供有效的 templateLayoutResId"
+        // TEMPLATE 的完整性（T1 整张模板 xor T2 条目拼装至少其一）不在此校验：
+        // T2 的条目声明在 StateSkeletonLayout.skeletonItems 中，本类不可见。
+        // 此处只拒绝“给了值但不是有效布局”的形式错误，缺配与互斥由控件统一抛异常。
+        require(templateLayoutResId == null || templateLayoutResId != 0) {
+            "SkeletonConfig.templateLayoutResId 必须为有效布局资源"
         }
     }
 

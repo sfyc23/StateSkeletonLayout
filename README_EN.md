@@ -282,6 +282,59 @@ Templates only define shapes and do not carry real text or business data:
 </com.sfyc.ssl.StateSkeletonLayout>
 ```
 
+### Item-Assembled Templates (T2): Reusing Success-State Item Layouts
+
+The `template` source offers two mutually exclusive supplies:
+
+| | T1 Whole Template | T2 Item-Assembled |
+| --- | --- | --- |
+| Declaration | `ssl_skeletonTemplate="@layout/…"` | `ssl_skeletonItemLayout="@layout/item_…"` + `ssl_skeletonItemCount="8"` |
+| Use when | The shape differs from success layouts and needs hand arrangement | The success-state item layout already is the shape you want; reuse it directly |
+
+T2 inflates the success layout item by item, assembles them vertically into an
+off-screen template, then runs the same geometry collection and mask rendering;
+the business Adapter is never replaced nor read. XML supports single-type only
+(multi-type goes through code):
+
+```xml
+<com.sfyc.ssl.StateSkeletonLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_useSkeleton="true"
+    app:ssl_skeletonSource="template"
+    app:ssl_skeletonItemLayout="@layout/item_profile_row"
+    app:ssl_skeletonItemCount="8">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</com.sfyc.ssl.StateSkeletonLayout>
+```
+
+Success layouts usually contain `wrap_content` TextViews with empty text, which
+inflate to zero height, so placeholder binding is required to fill placeholder
+text (it only determines geometry height and never enters the accessibility tree):
+
+```kotlin
+stateLayout.setSkeletonItemTemplate(R.layout.item_profile_row, 8) { itemView, _ ->
+    itemView.findViewById<TextView>(R.id.demo_row_title)?.text = "Placeholder title"
+    itemView.findViewById<TextView>(R.id.demo_row_subtitle)?.text = "Placeholder subtitle"
+}
+// Multi-type: declare in first-viewport top-down order
+stateLayout.skeletonItems = listOf(
+    SkeletonItemSpec(R.layout.item_profile_row, 3) { v, _ -> /* fill placeholders */ },
+    SkeletonItemSpec(R.layout.view_text_image, 2),
+)
+stateLayout.clearSkeletonItems()  // Clears the item-assembled declaration
+```
+
+Rules: T1 and T2 are mutually exclusive (coexistence throws, naming the attributes);
+`skeletonItems` is only valid with `source=TEMPLATE`; binders only do synchronous
+placeholder filling and are not serializable — they are dropped after process
+recreation (with a Debug log), so hosts must re-set them; Grid and horizontal rows
+still use T1 whole templates in this release.
+
 ### Three Mutually Exclusive Effects
 
 - `solid`: Static solid color, no animator.
@@ -299,6 +352,11 @@ Recommended approach: Write a dedicated template for the list with enough static
 app:ssl_skeletonSource="template"
 app:ssl_skeletonTemplate="@layout/skeleton_list_template"
 ```
+
+When the success-state item layout already is the shape you want, reuse it directly
+with the item-assembled template (T2) instead of hand-writing a `skeleton_*`
+mirror (see "Item-Assembled Templates" above and the "Item-Reuse Skeleton" sample);
+Grid still uses T1 whole templates in this release.
 
 **For list skeletons, prefer one instance covering the whole screen rather than one
 `StateSkeletonLayout` per item.**
@@ -512,7 +570,9 @@ Priority: Built-in < Theme Defaults < Global Config < XML Explicit Style < XML D
 | `ssl_loadingLayout` | reference | None | Warns and falls back to skeleton if unconfigured when `useSkeleton=false` (default) |
 | `ssl_useSkeleton` | boolean | `false` | `true` = skeleton, `false` = custom layout |
 | `ssl_skeletonSource` | `content`, `template` | `content` | — |
-| `ssl_skeletonTemplate` | reference | None | Throws exception if `template` lacks template or template has no shapes |
+| `ssl_skeletonTemplate` | reference | None | Throws exception if `template` lacks template or template has no shapes; mutually exclusive with `ssl_skeletonItemLayout` |
+| `ssl_skeletonItemLayout` | reference | None | Only valid with `template`; usually points at the item layout the RecyclerView uses after success |
+| `ssl_skeletonItemCount` | integer | `8` | Must be greater than 0; single-type shorthand in XML, multi-type goes through `skeletonItems` in code |
 | `ssl_skeletonEffect` | `solid`, `shimmer`, `pulse` | `shimmer` | Mutually exclusive |
 | `ssl_maskColor` | color | `@color/ssl_mask_default` | Skeleton base color |
 | `ssl_highlightColor` | color | `@color/ssl_highlight_default` | Used only by shimmer |
@@ -549,6 +609,9 @@ val requestedState: StateLayoutState      // Latest requested state (read-only)
 val renderedState: StateLayoutState       // Currently rendered state (read-only)
 var useSkeleton: Boolean                // true=skeleton, false=custom layout, default false
 var skeletonConfig: SkeletonConfig        // Replaced as a whole
+var skeletonItems: List<SkeletonItemSpec>?  // T2 item-assembled declaration; null = unused
+fun setSkeletonItemTemplate(layoutResId, itemCount, binder)  // Single-type shorthand (atomically establishes TEMPLATE+items)
+fun clearSkeletonItems()                  // Clears the item-assembled declaration
 var loadingShowDelayMillis: Long
 var minimumLoadingDurationMillis: Long
 var transitionEffect: StateTransitionEffect
@@ -615,7 +678,7 @@ The runtime setters, state layout configurations, and listener registrations abo
 3. **What if the initial content height is 0?**
    Use template mode (`ssl_skeletonSource="template"`); content-based extraction will degrade to a solid static mask and log a warning in Debug.
 4. **Why doesn't RecyclerView replace the Adapter?**
-   Replacing Adapters disrupts scroll positions, state restoration, and business Adapter lifecycles; the initial release only supports template skeletons with enough static rows to cover the first viewport.
+   Replacing Adapters disrupts scroll positions, state restoration, and business Adapter lifecycles; the initial release only supports template skeletons with enough static rows to cover the first viewport. When the success-state item layout already is the shape you want, reuse that same layout with the item-assembled template (T2) — the Adapter is still untouched (see "Item-Assembled Templates" and the "Item-Reuse Skeleton" sample).
 5. **How to play a full loop of Lottie / Shimmer?**
    Configure `ssl_minLoadingDuration` to match the animation's single-loop duration (Lottie starts/stops via visibility callbacks; the library does not rely on Animator frame callbacks for state decisions).
 6. **How to disable transition animations?**

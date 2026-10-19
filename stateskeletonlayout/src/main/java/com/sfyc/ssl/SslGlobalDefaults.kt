@@ -13,7 +13,7 @@ import androidx.annotation.Px
  * （库内置常量或 Theme Attribute）；字段非 `null` 时强制覆盖。
  *
  * **不覆盖布局资源类属性**（`emptyLayout` / `errorLayout` / `loadingLayout` /
- * `skeletonTemplate` / `errorRetryViewId`），这些属性页面各异，
+ * `skeletonTemplate` / `skeletonItems` / `errorRetryViewId`），这些属性页面各异，
  * 仍由 XML 或运行时单独配置。
  *
  * **优先级链**（低 → 高）：

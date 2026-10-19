@@ -8,6 +8,7 @@ import com.sfyc.ssl.R
 import com.sfyc.ssl.SkeletonConfig
 import com.sfyc.ssl.SkeletonDirection
 import com.sfyc.ssl.SkeletonEffect
+import com.sfyc.ssl.SkeletonItemSpec
 import com.sfyc.ssl.SkeletonSource
 import com.sfyc.ssl.SslGlobalDefaults
 import com.sfyc.ssl.StateLayoutState
@@ -22,6 +23,8 @@ internal data class MergedSslConfig(
     val initialState: StateLayoutState,
     val useSkeleton: Boolean,
     val skeletonConfig: SkeletonConfig,
+    val skeletonItemLayoutResId: Int,
+    val skeletonItemCount: Int?,
     val loadingShowDelayMillis: Long,
     val minimumLoadingDurationMillis: Long,
     val transitionEffect: StateTransitionEffect,
@@ -128,12 +131,18 @@ internal object SslDefaultsMerger {
             pulseMaxAlpha = xmlAttrs.pulseMaxAlpha ?: global.pulseMaxAlpha ?: themeAttrs.pulseMaxAlpha
                 ?: SslDefaultValues.PULSE_MAX_ALPHA,
         )
+        // 条目拼装模板是布局资源类属性，不参与 Global 覆盖（页面各异）。
+        val itemLayoutResId = xmlAttrs.skeletonItemLayoutResId.takeIf { it != 0 }
+            ?: themeAttrs.skeletonItemLayoutResId.takeIf { it != 0 } ?: 0
+        val itemCount = xmlAttrs.skeletonItemCount ?: themeAttrs.skeletonItemCount
         return MergedSslConfig(
             initialState = xmlAttrs.initialState ?: global.initialState ?: themeAttrs.initialState
                 ?: SslDefaultValues.INITIAL_STATE,
             useSkeleton = xmlAttrs.useSkeleton ?: global.useSkeleton ?: themeAttrs.useSkeleton
                 ?: SslDefaultValues.USE_SKELETON,
             skeletonConfig = skeletonConfig,
+            skeletonItemLayoutResId = itemLayoutResId,
+            skeletonItemCount = itemCount,
             loadingShowDelayMillis = xmlAttrs.loadingShowDelayMillis
                 ?: global.loadingShowDelayMillis ?: themeAttrs.loadingShowDelayMillis
                 ?: SslDefaultValues.LOADING_SHOW_DELAY_MILLIS,
@@ -167,6 +176,7 @@ internal object SslDefaultsMerger {
         fun resource(index: Int): Int = if (has(index)) a.getResourceId(index, 0) else 0
 
         val templateResId = resource(R.styleable.SslStateSkeletonLayout_ssl_skeletonTemplate).takeIf { it != 0 }
+        val itemLayoutResId = resource(R.styleable.SslStateSkeletonLayout_ssl_skeletonItemLayout)
 
         val source = if (has(R.styleable.SslStateSkeletonLayout_ssl_skeletonSource)) {
             when (a.getInt(R.styleable.SslStateSkeletonLayout_ssl_skeletonSource, 0)) {
@@ -216,6 +226,12 @@ internal object SslDefaultsMerger {
             emptyLayoutResId = resource(R.styleable.SslStateSkeletonLayout_ssl_emptyLayout),
             errorLayoutResId = resource(R.styleable.SslStateSkeletonLayout_ssl_errorLayout),
             customLoadingLayoutResId = resource(R.styleable.SslStateSkeletonLayout_ssl_loadingLayout),
+            skeletonItemLayoutResId = itemLayoutResId,
+            skeletonItemCount = if (has(R.styleable.SslStateSkeletonLayout_ssl_skeletonItemCount)) {
+                a.getInt(R.styleable.SslStateSkeletonLayout_ssl_skeletonItemCount, SkeletonItemSpec.DEFAULT_COUNT)
+            } else {
+                null
+            },
             errorRetryViewId = resource(R.styleable.SslStateSkeletonLayout_ssl_errorRetryViewId),
             initialState = initialState,
             useSkeleton = if (has(R.styleable.SslStateSkeletonLayout_ssl_useSkeleton)) {
@@ -317,6 +333,8 @@ internal data class XmlSslAttrs(
     val emptyLayoutResId: Int = 0,
     val errorLayoutResId: Int = 0,
     val customLoadingLayoutResId: Int = 0,
+    val skeletonItemLayoutResId: Int = 0,
+    val skeletonItemCount: Int? = null,
     val errorRetryViewId: Int = 0,
     val initialState: StateLayoutState? = null,
     val useSkeleton: Boolean? = null,

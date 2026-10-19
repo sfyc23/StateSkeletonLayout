@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test fixture: handwritten T1 template mirroring 8x ssl_test_item_row_fixed,
+     i.e. the same list shape that T2 assembles from ssl_test_item_row + binder. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+    <include layout="@layout/ssl_test_item_row_fixed" />
+
+</LinearLayout>

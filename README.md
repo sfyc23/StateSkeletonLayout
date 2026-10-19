@@ -302,6 +302,54 @@ StateSkeletonLayoutDefaults.install(
 </com.sfyc.ssl.StateSkeletonLayout>
 ```
 
+### 条目拼装模板（T2）：复用成功态 item 布局
+
+`template` 来源有两种供给方式，互斥二选一：
+
+| | T1 整张模板 | T2 条目拼装 |
+| --- | --- | --- |
+| 声明 | `ssl_skeletonTemplate="@layout/…"` | `ssl_skeletonItemLayout="@layout/item_…"` + `ssl_skeletonItemCount="8"` |
+| 适用 | 形状与成功布局差异大，需手工编排 | 成功态 item 布局本身就是想要的形状，直接复用 |
+
+T2 把成功布局逐条 inflate 后纵向拼装为离屏模板，再走同一套几何采集与遮罩绘制；
+业务 Adapter 不被替换、不被读取。XML 只支持单类型（多类型用代码声明）：
+
+```xml
+<com.sfyc.ssl.StateSkeletonLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_useSkeleton="true"
+    app:ssl_skeletonSource="template"
+    app:ssl_skeletonItemLayout="@layout/item_profile_row"
+    app:ssl_skeletonItemCount="8">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</com.sfyc.ssl.StateSkeletonLayout>
+```
+
+成功布局里多为 `wrap_content` 的空文本 `TextView`，inflate 出来高度为 0，
+必须用占位绑定填充占位文本（只决定几何高度，不进入无障碍树）：
+
+```kotlin
+stateLayout.setSkeletonItemTemplate(R.layout.item_profile_row, 8) { itemView, _ ->
+    itemView.findViewById<TextView>(R.id.demo_row_title)?.text = "占位标题"
+    itemView.findViewById<TextView>(R.id.demo_row_subtitle)?.text = "占位副标题"
+}
+// 多类型：按首屏自上而下的顺序声明
+stateLayout.skeletonItems = listOf(
+    SkeletonItemSpec(R.layout.item_profile_row, 3) { v, _ -> /* 填充占位文本 */ },
+    SkeletonItemSpec(R.layout.view_text_image, 2),
+)
+stateLayout.clearSkeletonItems()  // 清除条目拼装声明
+```
+
+规则：T1 与 T2 互斥（并存抛异常，错误信息含属性名）；`skeletonItems` 仅
+`source=TEMPLATE` 下有效；binder 只做同步占位填充，不可序列化——进程重建后置空
+（Debug 日志提示），宿主需在重建后重新设置；Grid 与横向行首版仍用 T1 整张模板。
+
 ### 三种效果（互斥）
 
 - `solid`：静态纯色，无动画器。
@@ -319,6 +367,10 @@ StateSkeletonLayoutDefaults.install(
 app:ssl_skeletonSource="template"
 app:ssl_skeletonTemplate="@layout/skeleton_list_template"
 ```
+
+如果成功态 item 布局本身就是想要的形状，可改用条目拼装模板（T2）直接复用，
+免去手写 `skeleton_*` 镜像（见上节"条目拼装模板"与示例"条目复用骨架"）；
+Grid 首版仍用 T1 整张模板。
 
 **列表骨架推荐"一个实例覆盖整屏"，而不是每个 item 一个 `StateSkeletonLayout`。**
 
@@ -539,7 +591,9 @@ Loading 一旦真正上屏至少保留该时长（等待首次布局的时间不
 | `ssl_loadingLayout` | reference | 无 | `useSkeleton=false`（默认）缺配置时打警告并回退骨架 |
 | `ssl_useSkeleton` | boolean | `false` | `true`=骨架、`false`=自定义布局 |
 | `ssl_skeletonSource` | `content`、`template` | `content` | — |
-| `ssl_skeletonTemplate` | reference | 无 | `template` 缺模板/模板无形状时抛异常 |
+| `ssl_skeletonTemplate` | reference | 无 | `template` 缺模板/模板无形状时抛异常；与 `ssl_skeletonItemLayout` 互斥 |
+| `ssl_skeletonItemLayout` | reference | 无 | 仅 `template` 下有效；常指向成功后 RecyclerView 的 item 布局 |
+| `ssl_skeletonItemCount` | integer | `8` | 必须大于 0；XML 单类型快捷声明，多类型用代码 `skeletonItems` |
 | `ssl_skeletonEffect` | `solid`、`shimmer`、`pulse` | `shimmer` | 三者互斥 |
 | `ssl_maskColor` | color | `@color/ssl_mask_default` | 骨架基础色 |
 | `ssl_highlightColor` | color | `@color/ssl_highlight_default` | 仅流光使用 |
@@ -579,6 +633,9 @@ val requestedState: StateLayoutState      // 最近请求（只读）
 val renderedState: StateLayoutState       // 已呈现（只读）
 var useSkeleton: Boolean                // true=骨架、false=自定义，默认false
 var skeletonConfig: SkeletonConfig        // 整体替换
+var skeletonItems: List<SkeletonItemSpec>?  // T2 条目拼装声明；null=未使用
+fun setSkeletonItemTemplate(layoutResId, itemCount, binder)  // 单类型快捷声明（原子建立 TEMPLATE+条目）
+fun clearSkeletonItems()                  // 清除条目拼装声明
 var loadingShowDelayMillis: Long
 var minimumLoadingDurationMillis: Long
 var transitionEffect: StateTransitionEffect
@@ -651,7 +708,8 @@ fun diagnostics(): StateLayoutDiagnostics  // 含 inStateViewTransaction 标记
    静态遮罩并在 Debug 打警告。
 4. **RecyclerView 为什么不替换 Adapter？**
    替换会破坏滚动位置、状态恢复与业务 Adapter 生命周期；首版只支持模板骨架，
-   静态行覆盖首屏即可。
+   静态行覆盖首屏即可。成功态 item 布局本身就是想要的形状时，可用条目拼装模板（T2）
+   直接复用同一份布局，仍不触碰 Adapter（见"条目拼装模板"与示例"条目复用骨架"）。
 5. **如何完整播放一轮 Lottie / Shimmer？**
    把 `ssl_minLoadingDuration` 配成与动画单轮时长一致（Lottie 在可见性回调中启停，
    库不依赖 Animator 帧回调做状态决策）。

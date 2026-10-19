@@ -28,6 +28,12 @@
         </attr>
         <!-- 独立骨架模板布局。source 为 template 时必填，仅描述形状。 -->
         <attr name="ssl_skeletonTemplate" format="reference" />
+        <!-- 条目拼装模板：成功态 item 布局复用（单类型快捷声明）。
+            仅 source 为 template 时有效，与 ssl_skeletonTemplate 互斥。
+            常指向加载成功后 RecyclerView 使用的同一份 item 布局。 -->
+        <attr name="ssl_skeletonItemLayout" format="reference" />
+        <!-- 该布局重复拼装的条数，必须大于 0。未显式设置时默认 8。 -->
+        <attr name="ssl_skeletonItemCount" format="integer" />
         <!-- 骨架效果：solid（纯色）| shimmer（流光）| pulse（脉冲），默认 shimmer。 -->
         <attr name="ssl_skeletonEffect" format="enum">
             <enum name="solid" value="0" />

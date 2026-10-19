@@ -65,6 +65,11 @@
     <string name="demo_recycler_hint">The list uses a standalone template skeleton; the business Adapter is never replaced and the scroll position is untouched</string>
     <string name="demo_recycler_toggle">Switch Linear / Grid</string>
 
+    <string name="demo_item_reuse_hint">The skeleton is assembled from the success-state item layout; XML declares the shape, binder fills placeholder text. Toggle to compare with the handwritten template</string>
+    <string name="demo_item_reuse_toggle">Toggle handwritten (T1) / item-reuse (T2)</string>
+    <string name="demo_item_reuse_placeholder_title">Placeholder title text</string>
+    <string name="demo_item_reuse_placeholder_subtitle">Placeholder subtitle line</string>
+
     <string name="demo_lottie_hint">Lottie inside the custom loading layout is started and stopped by the page in state callbacks; the library knows nothing about Lottie</string>
     <string name="demo_lottie_state">Lottie state: %1$s</string>
 

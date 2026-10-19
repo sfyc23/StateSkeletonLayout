@@ -59,9 +59,12 @@ class SkeletonConfigTest {
         SkeletonConfig(pulseMinAlpha = 0.9f, pulseMaxAlpha = 0.5f)
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun `模板来源缺布局资源抛异常`() {
-        SkeletonConfig(source = SkeletonSource.TEMPLATE, templateLayoutResId = null)
+    @Test
+    fun `模板来源缺布局资源时构造通过_完整性由控件校验`() {
+        // T2 条目拼装模板（skeletonItems）不在 SkeletonConfig 中，
+        // TEMPLATE 下“T1 xor T2 至少其一”由 StateSkeletonLayout 统一校验。
+        val config = SkeletonConfig(source = SkeletonSource.TEMPLATE, templateLayoutResId = null)
+        assertEquals(SkeletonSource.TEMPLATE, config.source)
     }
 
     @Test(expected = IllegalArgumentException::class)

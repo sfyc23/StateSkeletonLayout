@@ -43,6 +43,11 @@ data class SslLayoutOptions(
     val useSkeleton: Boolean? = null,
     /** 骨架配置快照。 */
     val skeletonConfig: SkeletonConfig? = null,
+    /**
+     * 条目拼装模板声明（T2）。非空时要求 `skeletonConfig.source == TEMPLATE`
+     * 且 `skeletonConfig.templateLayoutResId == null`。
+     */
+    val skeletonItems: List<SkeletonItemSpec>? = null,
     /** 状态切换过渡效果。 */
     val transitionEffect: StateTransitionEffect? = null,
     /** 状态切换时长，单位毫秒，不得小于 0。 */
@@ -58,9 +63,10 @@ data class SslLayoutOptions(
     val isEmpty: Boolean
         get() = emptyLayoutResId == null && errorLayoutResId == null && loadingLayoutResId == null &&
             errorRetryViewId == null && retryClickThrottleMillis == null && retryClicksEnabled == null &&
-            useSkeleton == null && skeletonConfig == null && transitionEffect == null &&
-            transitionDurationMillis == null && loadingShowDelayMillis == null &&
-            minimumLoadingDurationMillis == null && announceStateChanges == null
+            useSkeleton == null && skeletonConfig == null && skeletonItems == null &&
+            transitionEffect == null && transitionDurationMillis == null &&
+            loadingShowDelayMillis == null && minimumLoadingDurationMillis == null &&
+            announceStateChanges == null
 
     companion object {
         /**

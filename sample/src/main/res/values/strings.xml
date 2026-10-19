@@ -61,6 +61,11 @@
     <string name="demo_recycler_hint">列表使用独立模板骨架；业务 Adapter 不被替换，滚动位置不受影响</string>
     <string name="demo_recycler_toggle">切换 Linear / Grid</string>
 
+    <string name="demo_item_reuse_hint">复用成功态 item 布局拼装模板骨架；XML 声明形状，binder 填充占位文本，可一键对比手写模板</string>
+    <string name="demo_item_reuse_toggle">切换 T1 手写模板 / T2 条目复用</string>
+    <string name="demo_item_reuse_placeholder_title">占位标题占位标题</string>
+    <string name="demo_item_reuse_placeholder_subtitle">占位副标题行</string>
+
     <string name="demo_lottie_hint">自定义加载布局中的 Lottie 由页面在状态回调中成对启停，库不感知 Lottie</string>
     <string name="demo_lottie_state">Lottie 状态：%1$s</string>
 

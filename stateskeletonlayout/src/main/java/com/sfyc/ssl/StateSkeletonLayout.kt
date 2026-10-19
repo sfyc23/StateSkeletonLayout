@@ -132,23 +132,70 @@ class StateSkeletonLayout @JvmOverloads constructor(
      * 骨架配置快照。整体替换，控件统一校验并失效遮罩；
      * 动画位移/透明度变化不重建遮罩 Bitmap。
      */
+    private var skeletonConfigField: SkeletonConfig = SkeletonConfig()
+    private var skeletonItemsField: List<SkeletonItemSpec>? = null
+
+    /**
+     * 骨架配置快照。整体替换，控件统一校验并失效遮罩；
+     * 动画位移/透明度变化不重建遮罩 Bitmap。
+     */
     @get:MainThread
     @set:MainThread
-    var skeletonConfig: SkeletonConfig = SkeletonConfig()
+    var skeletonConfig: SkeletonConfig
+        get() = skeletonConfigField
         set(value) {
             checkMainThread("skeletonConfig")
-            if (field == value) return
-            validateTemplateResource(value)
+            if (skeletonConfigField == value) return
+            validateTemplateResource(value, skeletonItemsField)
             if (::skeletonRenderer.isInitialized) {
-                if (detached) validateTemplateResource(value) else skeletonRenderer.preflight(value)
+                if (detached) validateTemplateResource(value, skeletonItemsField)
+                else if (isSkeletonPairComplete(value, skeletonItemsField)) {
+                    skeletonRenderer.preflight(value, skeletonItemsField)
+                }
             }
-            val previous = field
-            field = value
+            val previous = skeletonConfigField
+            skeletonConfigField = value
             if (::skeletonRenderer.isInitialized) {
                 try {
                     skeletonRenderer.onConfigChanged()
                 } catch (failure: Throwable) {
-                    field = previous
+                    skeletonConfigField = previous
+                    skeletonRenderer.onConfigChanged()
+                    throw failure
+                }
+            }
+        }
+
+    /**
+     * 条目拼装模板声明（T2）。`null` 表示未使用 T2 方式。
+     *
+     * 仅 `SkeletonSource.TEMPLATE` 下有效，与
+     * `SkeletonConfig.templateLayoutResId`（T1 整张模板）互斥。
+     * 整体替换，控件统一校验并失效遮罩；`binder` 不可序列化，
+     * 进程重建与配置恢复后置空，需宿主重新设置。
+     */
+    @get:MainThread
+    @set:MainThread
+    var skeletonItems: List<SkeletonItemSpec>?
+        get() = skeletonItemsField
+        set(value) {
+            checkMainThread("skeletonItems")
+            val normalized = value?.takeIf { it.isNotEmpty() }
+            if (skeletonItemsField == normalized) return
+            validateTemplateResource(skeletonConfigField, normalized)
+            if (::skeletonRenderer.isInitialized) {
+                if (detached) validateTemplateResource(skeletonConfigField, normalized)
+                else if (isSkeletonPairComplete(skeletonConfigField, normalized)) {
+                    skeletonRenderer.preflight(skeletonConfigField, normalized)
+                }
+            }
+            val previous = skeletonItemsField
+            skeletonItemsField = normalized
+            if (::skeletonRenderer.isInitialized) {
+                try {
+                    skeletonRenderer.onConfigChanged()
+                } catch (failure: Throwable) {
+                    skeletonItemsField = previous
                     skeletonRenderer.onConfigChanged()
                     throw failure
                 }
@@ -367,7 +414,34 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
         initialState = merged.initialState
         useSkeleton = merged.useSkeleton
-        skeletonConfig = merged.skeletonConfig
+        // 骨架模板供给原子初始化：T2 的 config 单独看是“TEMPLATE 却无模板”，
+        // 分步走 setter 必然经过非法中间态，故统一校验后直写 backing field。
+        // 此时渲染器尚未创建，无需 preflight / onConfigChanged。
+        val initialItems: List<SkeletonItemSpec>? = if (merged.skeletonItemLayoutResId != 0) {
+            val itemCount = merged.skeletonItemCount ?: SkeletonItemSpec.DEFAULT_COUNT
+            listOf(SkeletonItemSpec(merged.skeletonItemLayoutResId, itemCount))
+        } else {
+            if (merged.skeletonItemCount != null) {
+                throw IllegalArgumentException(
+                    "ssl_skeletonItemCount 需要配合 ssl_skeletonItemLayout 使用，" +
+                        "请先设置条目布局",
+                )
+            }
+            null
+        }
+        validateTemplateResource(merged.skeletonConfig, initialItems)
+        // XML 构造期严格校验完整性：TEMPLATE 下 T1 xor T2 至少其一。
+        // 运行时 setter 允许中间态（见 validateTemplateResource），此处不允许。
+        if (merged.skeletonConfig.source == SkeletonSource.TEMPLATE &&
+            merged.skeletonConfig.templateLayoutResId == null && initialItems == null
+        ) {
+            throw IllegalArgumentException(
+                "ssl_skeletonSource=template 时必须提供 ssl_skeletonTemplate 或 " +
+                    "ssl_skeletonItemLayout 其中一种模板供给方式",
+            )
+        }
+        skeletonConfigField = merged.skeletonConfig
+        skeletonItemsField = initialItems
         transitionEffect = merged.transitionEffect
         transitionDurationMillis = merged.transitionDurationMillis
         announceStateChanges = merged.announceStateChanges
@@ -536,6 +610,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
             configProvider = { skeletonConfig },
             inflater = LayoutInflater.from(context),
             nodeConfigProvider = { nodeConfigs[it] },
+            itemSpecsProvider = { skeletonItems },
         )
         layoutRenderer = LayoutLoadingRenderer(registry)
         transitions = TransitionController(
@@ -719,7 +794,33 @@ class StateSkeletonLayout @JvmOverloads constructor(
         options.retryClickThrottleMillis?.let { retryClickThrottleMillis = it }
         options.retryClicksEnabled?.let { retryClicksEnabled = it }
         options.useSkeleton?.let { useSkeleton = it }
-        options.skeletonConfig?.let { skeletonConfig = it }
+        // 骨架模板供给原子应用：config 与 items 成对校验、成对提交，
+        // 避免“TEMPLATE 却无模板”的非法中间态。仅当其中之一出现时才走原子路径。
+        if (options.skeletonConfig != null || options.skeletonItems != null) {
+            val targetConfig = options.skeletonConfig ?: skeletonConfigField
+            val targetItems = options.skeletonItems ?: skeletonItemsField
+            validateTemplateResource(targetConfig, targetItems)
+            if (::skeletonRenderer.isInitialized) {
+                if (detached) validateTemplateResource(targetConfig, targetItems)
+                else if (isSkeletonPairComplete(targetConfig, targetItems)) {
+                    skeletonRenderer.preflight(targetConfig, targetItems)
+                }
+            }
+            val previousConfig = skeletonConfigField
+            val previousItems = skeletonItemsField
+            skeletonConfigField = targetConfig
+            skeletonItemsField = targetItems?.takeIf { it.isNotEmpty() }
+            if (::skeletonRenderer.isInitialized) {
+                try {
+                    skeletonRenderer.onConfigChanged()
+                } catch (failure: Throwable) {
+                    skeletonConfigField = previousConfig
+                    skeletonItemsField = previousItems
+                    skeletonRenderer.onConfigChanged()
+                    throw failure
+                }
+            }
+        }
         options.transitionEffect?.let { transitionEffect = it }
         options.transitionDurationMillis?.let { transitionDurationMillis = it }
         options.loadingShowDelayMillis?.let { loadingShowDelayMillis = it }
@@ -762,6 +863,61 @@ class StateSkeletonLayout @JvmOverloads constructor(
         registry.clear(state)?.let { releaseStateView(state, it) }
     }
 
+    /**
+     * 单类型快捷声明：原子建立“TEMPLATE + 条目”组合。
+     *
+     * 本方法把 config（source 切 TEMPLATE、清空 T1 模板）与 items
+     * 成对校验、成对提交。纯程序化从默认 CONTENT 起步时推荐用本方法或
+     * [applyOptions]；分步写法仅支持“先 config 到 TEMPLATE、再补 items”
+     * （中间态渲染时会按缺模板抛异常），不支持“先 items 后 config”。
+     *
+     * XML 只支持单类型时用 `ssl_skeletonItemLayout` / `ssl_skeletonItemCount` 声明形状，
+     * 占位绑定仍走本方法补齐。多类型且 config 已为 TEMPLATE 时可直接设置 [skeletonItems]。
+     */
+    @MainThread
+    fun setSkeletonItemTemplate(
+        @LayoutRes layoutResId: Int,
+        itemCount: Int = SkeletonItemSpec.DEFAULT_COUNT,
+        binder: ((View, Int) -> Unit)? = null,
+    ) {
+        checkMainThread("setSkeletonItemTemplate")
+        val newItems = listOf(SkeletonItemSpec(layoutResId, itemCount, binder))
+        val currentConfig = skeletonConfigField
+        val newConfig = if (currentConfig.source == SkeletonSource.TEMPLATE &&
+            currentConfig.templateLayoutResId == null
+        ) {
+            currentConfig
+        } else {
+            currentConfig.copy(source = SkeletonSource.TEMPLATE, templateLayoutResId = null)
+        }
+        validateTemplateResource(newConfig, newItems)
+        if (::skeletonRenderer.isInitialized) {
+            if (detached) validateTemplateResource(newConfig, newItems)
+            else skeletonRenderer.preflight(newConfig, newItems)
+        }
+        val previousConfig = skeletonConfigField
+        val previousItems = skeletonItemsField
+        skeletonConfigField = newConfig
+        skeletonItemsField = newItems
+        if (::skeletonRenderer.isInitialized) {
+            try {
+                skeletonRenderer.onConfigChanged()
+            } catch (failure: Throwable) {
+                skeletonConfigField = previousConfig
+                skeletonItemsField = previousItems
+                skeletonRenderer.onConfigChanged()
+                throw failure
+            }
+        }
+    }
+
+    /** 清除条目拼装声明（T2），回到 T1 / 未配置状态。 */
+    @MainThread
+    fun clearSkeletonItems() {
+        checkMainThread("clearSkeletonItems")
+        skeletonItems = null
+    }
+
     /** 设置 / 移除指定 ID 的节点规则，适用于内容和模板中的相同 ID。 */
     @MainThread
     fun setSkeletonNodeConfig(@IdRes viewId: Int, config: SkeletonNodeConfig?) {
@@ -773,7 +929,9 @@ class StateSkeletonLayout @JvmOverloads constructor(
         try {
             if (::skeletonRenderer.isInitialized) {
                 skeletonRenderer.invalidateNodeRules(refresh = false)
-                if (!detached) skeletonRenderer.preflight()
+                if (!detached && isSkeletonPairComplete(skeletonConfigField, skeletonItemsField)) {
+                    skeletonRenderer.preflight()
+                }
                 skeletonRenderer.invalidate()
             }
         } catch (failure: Throwable) {
@@ -1203,6 +1361,10 @@ class StateSkeletonLayout @JvmOverloads constructor(
             retryEnabled = retryClicksEnabled
             nodeRules.putAll(nodeConfigs)
             descriptions.putAll(stateDescriptions.mapValues { it.value.toString() })
+            // binder 不可序列化：只保存布局与条数，恢复后 binder 置空（见 applyRestoredState）。
+            val items = skeletonItems?.takeIf { it.isNotEmpty() }
+            skeletonItemLayouts = items?.map { it.layoutResId } ?: emptyList()
+            skeletonItemCounts = items?.map { it.count } ?: emptyList()
         }
     }
 
@@ -1270,7 +1432,40 @@ class StateSkeletonLayout @JvmOverloads constructor(
             pulseMaxAlpha = state.pulseMax,
             maximumMaskPixels = state.maximumPixels.takeIf { it > 0 } ?: Long.MAX_VALUE,
         )
-        skeletonConfig = restoredConfig
+        // 原子恢复两者：分步走 setter 必然经过“两者并存 / 两者皆空”的非法中间态，
+        // 故先统一校验最终态，再直写 backing field，最后统一通知渲染器。
+        val restoredItems: List<SkeletonItemSpec>? = if (state.formatVersion >= 3) {
+            val layouts = state.skeletonItemLayouts
+            val counts = state.skeletonItemCounts
+            if (layouts.isEmpty()) {
+                null
+            } else if (layouts.size == counts.size) {
+                layouts.mapIndexed { index, layoutResId ->
+                    SkeletonItemSpec(layoutResId, counts[index])
+                }
+            } else {
+                android.util.Log.w(
+                    "StateSkeletonLayout",
+                    "SavedState 条目布局与条数不匹配，已清空条目拼装声明",
+                )
+                null
+            }
+        } else {
+            // v1/v2 时代无 T2 条目：按保存时的状态恢复（无条目），不保留当前 XML 声明。
+            null
+        }
+        if (restoredItems != null && BuildConfig.DEBUG) {
+            android.util.Log.d(
+                TAG,
+                "条目拼装模板的 binder 不可序列化，已置空；宿主需在重建后重新设置占位绑定",
+            )
+        }
+        validateTemplateResource(restoredConfig, restoredItems)
+        skeletonConfigField = restoredConfig
+        skeletonItemsField = restoredItems
+        if (::skeletonRenderer.isInitialized) {
+            skeletonRenderer.onConfigChanged()
+        }
         // 画面事实仍由真实提交推进；恢复 Loading 也重新建立最短展示计时。
         presentRestored(requested)
         released.forEach { (target, view) -> releaseStateView(target, view) }
@@ -1310,6 +1505,9 @@ class StateSkeletonLayout @JvmOverloads constructor(
         var retryEnabled: Boolean = true
         val nodeRules = mutableMapOf<Int, SkeletonNodeConfig>()
         val descriptions = mutableMapOf<StateLayoutState, String>()
+        // T2 条目拼装声明：只保存布局与条数，binder 不可序列化，恢复后置空。
+        var skeletonItemLayouts: List<Int> = emptyList()
+        var skeletonItemCounts: List<Int> = emptyList()
 
         constructor(superState: Parcelable?) : super(superState)
 
@@ -1359,6 +1557,18 @@ class StateSkeletonLayout @JvmOverloads constructor(
                     parcel.readString()?.let { descriptions[target] = it }
                 }
             }
+            if (version >= 3) {
+                val layoutCount = parcel.readInt()
+                require(layoutCount in 0..10000) { "SavedState 条目数量非法" }
+                val layouts = ArrayList<Int>(layoutCount)
+                repeat(layoutCount) { layouts += parcel.readInt() }
+                skeletonItemLayouts = layouts
+                val countsSize = parcel.readInt()
+                require(countsSize == layoutCount) { "SavedState 条目布局与条数不匹配" }
+                val counts = ArrayList<Int>(countsSize)
+                repeat(countsSize) { counts += parcel.readInt() }
+                skeletonItemCounts = counts
+            }
         }
 
         override fun writeToParcel(out: Parcel, flags: Int) {
@@ -1406,6 +1616,10 @@ class StateSkeletonLayout @JvmOverloads constructor(
             }
             out.writeInt(descriptions.size)
             descriptions.forEach { (target, text) -> out.writeInt(target.ordinal); out.writeString(text) }
+            out.writeInt(skeletonItemLayouts.size)
+            skeletonItemLayouts.forEach { out.writeInt(it) }
+            out.writeInt(skeletonItemCounts.size)
+            skeletonItemCounts.forEach { out.writeInt(it) }
         }
 
         companion object CREATOR : Parcelable.Creator<SavedState> {
@@ -1418,7 +1632,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
              * 新增可保存字段时，把它 +1 并加进 `version >= N` 的读取分支。
              * 写入前会断言字段等于本值，避免字段改了而写入布局没改。
              */
-            internal const val CURRENT_FORMAT_VERSION = 2
+            internal const val CURRENT_FORMAT_VERSION = 3
             override fun createFromParcel(parcel: Parcel): SavedState = SavedState(parcel)
 
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
@@ -1427,12 +1641,57 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
     // endregion
 
-    private fun validateTemplateResource(config: SkeletonConfig) {
-        if (config.source == SkeletonSource.TEMPLATE) {
-            require(resources.getResourceTypeName(requireNotNull(config.templateLayoutResId)) == "layout") {
+    /**
+     * 运行时即时校验：只拒绝明确冲突的组合，允许“TEMPLATE 暂无模板”的中间态。
+     *
+     * 程序化从默认 CONTENT 起步时，允许先把 `skeletonConfig` 切到
+     * `TEMPLATE`（暂无模板）再补 `skeletonItems`，或先清 items 再换 config；
+     * 完整性（TEMPLATE 下 T1 xor T2 至少其一）在 XML 构造时严格校验，
+     * 在渲染时由 `preflight` / `validateStateConfiguration` 兜底。
+     */
+    private fun validateTemplateResource(
+        config: SkeletonConfig,
+        items: List<SkeletonItemSpec>? = skeletonItems,
+    ) {
+        val activeItems = items?.takeIf { it.isNotEmpty() }
+        if (!activeItems.isNullOrEmpty()) {
+            require(config.source == SkeletonSource.TEMPLATE) {
+                "skeletonItems 需要配合 SkeletonSource.TEMPLATE 使用，" +
+                    "当前 source=${config.source}，请设置 skeletonConfig.source=TEMPLATE"
+            }
+            require(config.templateLayoutResId == null) {
+                "skeletonItems 与 ssl_skeletonTemplate 互斥，" +
+                    "请只保留其中一种模板供给方式"
+            }
+            activeItems.forEachIndexed { index, spec ->
+                require(resources.getResourceTypeName(spec.layoutResId) == "layout") {
+                    "skeletonItems[$index] 必须指向布局资源"
+                }
+            }
+            return
+        }
+        // 无条目时只校验形式（给了值必须指向布局），不校验完整性；
+        // TEMPLATE 暂无模板的中间态允许存在，渲染时 preflight 会按缺模板抛异常。
+        config.templateLayoutResId?.let {
+            require(resources.getResourceTypeName(it) == "layout") {
                 "ssl_skeletonTemplate 必须指向布局资源"
             }
         }
+    }
+
+    /**
+     * 模板供给是否完整（值得预检）：CONTENT 无需模板；
+     * TEMPLATE 下 T1 与 T2 恰居其一。中间态（两者皆无）跳过预检，
+     * 留待渲染时按缺模板抛异常。
+     */
+    private fun isSkeletonPairComplete(
+        config: SkeletonConfig,
+        items: List<SkeletonItemSpec>?,
+    ): Boolean {
+        if (config.source != SkeletonSource.TEMPLATE) return true
+        val hasItems = !items.isNullOrEmpty()
+        val hasTemplate = config.templateLayoutResId != null
+        return hasItems xor hasTemplate
     }
 
     private fun presentRestored(state: StateLayoutState) {
