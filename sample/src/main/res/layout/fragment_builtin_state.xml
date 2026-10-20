@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   内置状态页示例：XML 只声明业务内容，刻意不写 ssl_emptyLayout / ssl_errorLayout /
-  ssl_errorRetryViewId，验证库内置兜底页面与自动接管的统一重试入口。
+  ssl_emptyRetryViewIds / ssl_errorRetryViewIds，验证库内置兜底页面与自动接管的默认重试入口.
 
   内置布局的三个固定 ID 定义在库的 ids.xml 中：
   com.sfyc.ssl.R.id.ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry。

@@ -330,4 +330,89 @@ class SslDefaultsMergerTest {
     }
 
     // endregion
+
+    // region 重试配置逐状态合并
+
+    @Test
+    fun merge_retry_partialOverride_keepsOtherState() {
+        StateSkeletonLayoutDefaults.install(
+            SslGlobalDefaults(
+                retryConfig = StateRetryConfig(
+                    emptyViewIds = listOf(1),
+                    errorViewIds = listOf(2, 3),
+                ),
+            ),
+        )
+        val merged = SslDefaultsMerger.merge(
+            context,
+            XmlSslAttrs(),
+            StateSkeletonLayoutDefaults.current,
+        )
+        // Global 两状态同时生效。
+        assertEquals(listOf(1), merged.emptyRetryViewIds)
+        assertEquals(listOf(2, 3), merged.errorRetryViewIds)
+    }
+
+    @Test
+    fun merge_retry_xmlOverridesGlobalPerState() {
+        StateSkeletonLayoutDefaults.install(
+            SslGlobalDefaults(
+                retryConfig = StateRetryConfig(
+                    emptyViewIds = listOf(1),
+                    errorViewIds = listOf(2),
+                ),
+            ),
+        )
+        val merged = SslDefaultsMerger.merge(
+            context,
+            XmlSslAttrs(emptyRetryViewIds = listOf(9)),
+            StateSkeletonLayoutDefaults.current,
+        )
+        // EMPTY 走 XML，ERROR 保留 Global：逐状态替换，不做并集。
+        assertEquals(listOf(9), merged.emptyRetryViewIds)
+        assertEquals(listOf(2), merged.errorRetryViewIds)
+    }
+
+    @Test
+    fun merge_retry_explicitEmptyTruncatesInheritance() {
+        StateSkeletonLayoutDefaults.install(
+            SslGlobalDefaults(
+                retryConfig = StateRetryConfig(
+                    emptyViewIds = listOf(1),
+                    errorViewIds = listOf(2),
+                ),
+            ),
+        )
+        val merged = SslDefaultsMerger.merge(
+            context,
+            XmlSslAttrs(emptyRetryViewIds = emptyList()),
+            StateSkeletonLayoutDefaults.current,
+        )
+        // 高优先级空列表截断继承，不通过并集重新启用。
+        assertEquals(emptyList<Int>(), merged.emptyRetryViewIds)
+        assertEquals(listOf(2), merged.errorRetryViewIds)
+    }
+
+    @Test
+    fun merge_retry_nullSkipsAndInstallIsolated() {
+        val first = SslGlobalDefaults(
+            retryConfig = StateRetryConfig(emptyViewIds = listOf(1), errorViewIds = null),
+        )
+        StateSkeletonLayoutDefaults.install(first)
+        val mergedFirst = SslDefaultsMerger.merge(context, XmlSslAttrs(), StateSkeletonLayoutDefaults.current)
+        assertEquals(listOf(1), mergedFirst.emptyRetryViewIds)
+        assertEquals(null, mergedFirst.errorRetryViewIds)
+
+        // 整体替换：第二次 install 不保留第一次字段。
+        StateSkeletonLayoutDefaults.install(
+            SslGlobalDefaults(
+                retryConfig = StateRetryConfig(emptyViewIds = null, errorViewIds = listOf(7)),
+            ),
+        )
+        val mergedSecond = SslDefaultsMerger.merge(context, XmlSslAttrs(), StateSkeletonLayoutDefaults.current)
+        assertEquals(null, mergedSecond.emptyRetryViewIds)
+        assertEquals(listOf(7), mergedSecond.errorRetryViewIds)
+    }
+
+    // endregion
 }

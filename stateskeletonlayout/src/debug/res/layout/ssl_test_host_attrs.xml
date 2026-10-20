@@ -9,7 +9,8 @@
     tools:ignore="HardcodedText"
     app:ssl_emptyLayout="@layout/ssl_test_state_simple"
     app:ssl_errorLayout="@layout/ssl_test_state_simple"
-    app:ssl_errorRetryViewId="@id/ssl_test_retry"
+    app:ssl_emptyRetryViewIds="@array/ssl_test_single_retry_ids"
+    app:ssl_errorRetryViewIds="@array/ssl_test_single_retry_ids"
     app:ssl_skeletonEffect="pulse"
     app:ssl_loadingShowDelay="0"
     app:ssl_minLoadingDuration="300">

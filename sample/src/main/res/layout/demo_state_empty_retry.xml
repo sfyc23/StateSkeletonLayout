@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 多入口示例空态页：图片 + 文字均为重试入口，点击任一触发同一回调。 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp">
+
+    <ImageView
+        android:id="@+id/demo_empty_image"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:minWidth="48dp"
+        android:minHeight="48dp"
+        android:contentDescription="@string/demo_multi_empty_image_desc"
+        android:src="@drawable/demo_avatar_circle" />
+
+    <TextView
+        android:id="@+id/demo_empty_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:minWidth="48dp"
+        android:minHeight="48dp"
+        android:gravity="center"
+        android:text="@string/demo_multi_empty_retry"
+        android:textColor="@color/demo_text_primary"
+        android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/demo_state_empty_desc"
+        android:textColor="@color/demo_text_secondary"
+        android:textSize="13sp"
+        tools:ignore="HardcodedText" />
+
+</LinearLayout>

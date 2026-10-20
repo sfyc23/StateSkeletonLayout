@@ -95,7 +95,10 @@ class StateSkeletonLayoutRefinementsTest {
             SslLayoutOptions(
                 emptyLayoutResId = R.layout.ssl_test_state_simple,
                 errorLayoutResId = R.layout.ssl_test_state_simple,
-                errorRetryViewId = R.id.ssl_test_retry,
+                retryConfig = StateRetryConfig(
+                    emptyViewIds = listOf(R.id.ssl_test_retry),
+                    errorViewIds = listOf(R.id.ssl_test_retry),
+                ),
                 retryClickThrottleMillis = 750L,
                 retryClicksEnabled = false,
                 useSkeleton = true,
@@ -107,6 +110,8 @@ class StateSkeletonLayoutRefinementsTest {
             ),
         )
 
+        assertEquals(listOf(R.id.ssl_test_retry), layout.getRetryViewIds(StateLayoutState.EMPTY))
+        assertEquals(listOf(R.id.ssl_test_retry), layout.getRetryViewIds(StateLayoutState.ERROR))
         assertEquals(750L, layout.retryClickThrottleMillis)
         assertFalse(layout.retryClicksEnabled)
         assertTrue(layout.useSkeleton)
@@ -137,6 +142,10 @@ class StateSkeletonLayoutRefinementsTest {
     fun `全空options是空操作且isEmpty判定正确`() {
         val options = SslLayoutOptions()
         assertTrue(options.isEmpty)
+        // retryConfig 全 null 仍属于空操作。
+        assertTrue(SslLayoutOptions(retryConfig = StateRetryConfig(null, null)).isEmpty)
+        // 任一状态非 null 即为有效配置，含显式关闭的空列表。
+        assertFalse(SslLayoutOptions(retryConfig = StateRetryConfig(emptyList(), null)).isEmpty)
 
         val layout = StateSkeletonLayout(activity).apply {
             setContentView(TextView(activity))
@@ -201,18 +210,21 @@ class StateSkeletonLayoutRefinementsTest {
             transitionEffect = StateTransitionEffect.NONE
             minimumLoadingDurationMillis = 0
             setContentView(TextView(activity))
-            setStateViewLayout(StateLayoutState.ERROR, R.layout.ssl_test_template_empty)
+            setStateViewLayout(StateLayoutState.ERROR, R.layout.ssl_test_state_simple)
+            setStateViewLayout(StateLayoutState.EMPTY, R.layout.ssl_test_template_empty)
         }
+        // 程序化初始为内置默认 [builtin]；切到宿主布局后显式关闭，模拟“未配置”起点。
+        layout.setRetryViewIds(StateLayoutState.ERROR)
         var clicks = 0
-        layout.setOnRetryClickListener { clicks++ }
+        layout.setOnRetryListener { _, _, _ -> clicks++ }
         attach(layout)
         layout.showError()
 
-        // 未配置重试 ID 时没有入口。
-        assertEquals(0, clicks)
+        // 已显式关闭，无入口。
+        assertEquals(0, layout.getRetryViewIds(StateLayoutState.ERROR).size)
 
-        // 换到模板布局里实际存在的 ID 后应当生效。
-        layout.errorRetryViewId = R.id.ssl_test_retry
+        // 换到布局里实际存在的 ID 后应当生效。
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
         val errorView = layout.getStateView(StateLayoutState.ERROR)
         val retry = errorView?.findViewById<View>(R.id.ssl_test_retry)
         if (retry != null) {
@@ -229,12 +241,12 @@ class StateSkeletonLayoutRefinementsTest {
             transitionEffect = StateTransitionEffect.NONE
             minimumLoadingDurationMillis = 0
             retryClickThrottleMillis = 0
-            errorRetryViewId = R.id.ssl_test_retry
             setContentView(TextView(activity))
             setStateViewLayout(StateLayoutState.ERROR, R.layout.ssl_test_state_simple)
         }
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
         var clicks = 0
-        layout.setOnRetryClickListener { clicks++ }
+        layout.setOnRetryListener { _, _, _ -> clicks++ }
         attach(layout)
         layout.showError()
         val oldRetry = checkNotNull(layout.getStateView(StateLayoutState.ERROR))
@@ -256,13 +268,13 @@ class StateSkeletonLayoutRefinementsTest {
             transitionEffect = StateTransitionEffect.NONE
             minimumLoadingDurationMillis = 0
             retryClickThrottleMillis = 0
-            errorRetryViewId = R.id.ssl_test_retry
             setContentView(TextView(activity))
             setStateViewLayout(StateLayoutState.ERROR, R.layout.ssl_test_state_simple)
         }
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
         var clicks = 0
         var rejected: View? = null
-        layout.setOnRetryClickListener { clicks++ }
+        layout.setOnRetryListener { _, _, _ -> clicks++ }
         attach(layout)
         layout.showError()
         val original = checkNotNull(layout.getStateView(StateLayoutState.ERROR))
@@ -285,7 +297,7 @@ class StateSkeletonLayoutRefinementsTest {
         assertEquals(0, clicks)
         oldRetry.performClick()
         assertEquals(1, clicks)
-        layout.errorRetryViewId = 0
+        layout.setRetryViewIds(StateLayoutState.ERROR)
         assertFalse("关闭重试仍须解绑原入口", oldRetry.hasOnClickListeners())
     }
 

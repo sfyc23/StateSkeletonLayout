@@ -13,8 +13,8 @@ import androidx.annotation.Px
  * （库内置常量或 Theme Attribute）；字段非 `null` 时强制覆盖。
  *
  * **不覆盖布局资源类属性**（`emptyLayout` / `errorLayout` / `loadingLayout` /
- * `skeletonTemplate` / `skeletonItems` / `errorRetryViewId`），这些属性页面各异，
- * 仍由 XML 或运行时单独配置。
+ * `skeletonTemplate` / `skeletonItems`），这些属性页面各异，
+ * 仍由 XML 或运行时单独配置。重试入口通过 [retryConfig] 按状态参与默认值合并。
  *
  * **优先级链**（低 → 高）：
  * ```
@@ -45,6 +45,7 @@ import androidx.annotation.Px
  * @property useBuiltInStateLayouts 未配置 `ssl_emptyLayout` / `ssl_errorLayout` 时，
  *   是否回退到库内置的空态 / 错误态布局。默认 `true`（内置布局可用）；
  *   设为 `false` 时恢复严格行为——未配置即抛异常，不显示任何兜底页面。
+ * @property retryConfig 按状态声明的重试入口默认值；按状态参与合并，null 不参与覆盖。
  */
 data class SslGlobalDefaults(
     val useSkeleton: Boolean? = null,
@@ -65,4 +66,5 @@ data class SslGlobalDefaults(
     val transitionDurationMillis: Long? = null,
     val announceStateChanges: Boolean? = null,
     val useBuiltInStateLayouts: Boolean? = null,
+    val retryConfig: StateRetryConfig? = null,
 )

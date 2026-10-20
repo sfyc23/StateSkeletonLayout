@@ -151,13 +151,41 @@
     <string name="demo_diagnostics_fallback_allocation">Mask bitmap allocation failed, switching to static drawing</string>
     <string name="demo_diagnostics_fallback_pixel_budget">Mask area exceeds maximumMaskPixels: static fallback, no animation; an existing mask is kept for static drawing (maskBytes stays above zero), otherwise it stays empty</string>
 
-    <string name="demo_builtin_hint">The XML on this page declares no ssl_emptyLayout / ssl_errorLayout / ssl_errorRetryViewId; switch to EMPTY / ERROR to verify the library built-in fallback pages</string>
+    <string name="demo_builtin_hint">The XML on this page declares no ssl_emptyLayout / ssl_errorLayout / ssl_emptyRetryViewIds / ssl_errorRetryViewIds; switch to EMPTY / ERROR to verify the library built-in fallback pages</string>
     <string name="demo_builtin_btn_replace_message">Replace built-in error page copy</string>
     <string name="demo_builtin_retry_count">Retry taps: %1$d (the unified retry entry the library wires up for you)</string>
-    <string name="demo_builtin_note">Note: the three IDs inside the built-in layouts are a public contract — ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry. When ssl_errorRetryViewId is not set explicitly, the widget binds the built-in retry button as the unified retry entry automatically. To change the copy or swap in your own widget, call getStateView(ERROR) for the root node and replace it via findViewById; the built-in layouts only use android:* attributes so the fallback pages pull in neither Material nor AppCompat.</string>
+    <string name="demo_builtin_note">Note: the three IDs inside the built-in layouts are a public contract — ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry. When retry IDs are not set explicitly, the widget binds the built-in retry button as the default error entry automatically. To change the copy or swap in your own widget, call getStateView(ERROR) for the root node and replace it via findViewById; the built-in layouts only use android:* attributes so the fallback pages pull in neither Material nor AppCompat.</string>
     <string name="demo_builtin_replaced_message">Copy replaced by the host</string>
     <string name="demo_builtin_origin_message">Failed to load. Please retry.</string>
 
     <string name="demo_list_skeleton_hint">One skeleton instance covers the whole screen of rows, and the list Adapter is never replaced</string>
     <string name="demo_list_skeleton_note">Why a full-screen template instead of one instance per item: every instance builds its own full-size ALPHA_8 mask, so eight rows means eight per-pixel mask buffers growing linearly with the row count; each instance also subscribes to the animation clock — the library now shares one ticker across instances, but the mask memory is still one buffer per instance. This page reaches the same visual result with a single instance plus a static eight-row template, so memory is independent of how long the list is.</string>
+
+    <string name="resume_hint">A 500 ms skeleton precedes the profile; work history loads independently for each scenario. The whole page scrolls as one list.</string>
+    <string name="resume_candidate">Candidate: %1$s (tap to switch)</string>
+    <string name="resume_reload_work">Reload work history</string>
+    <string name="resume_highlights_title">Core skills</string>
+    <string name="resume_section_title">Work history</string>
+    <string name="resume_section_syncing">Syncing…</string>
+    <string name="resume_section_count">%1$d work history entries</string>
+    <string name="resume_section_empty">No work history</string>
+    <string name="resume_section_error">Failed to load</string>
+    <string name="resume_empty_title">No work history records</string>
+    <string name="resume_empty_desc">This candidate has no work history data</string>
+    <string name="resume_error_title">Failed to load work history</string>
+    <string name="resume_error_desc">Check the network and retry</string>
+    <string name="resume_scenario_success">Normal loading (4 entries)</string>
+    <string name="resume_scenario_empty">Empty work history</string>
+    <string name="resume_scenario_error_once">First request fails, retry succeeds</string>
+    <string name="resume_scenario_error">Persistent failure</string>
+    <string name="resume_status">%1$s · %2$d ms · dataset %3$d\\nProfile %4$s · Work history %5$s</string>
+
+    <string name="demo_multi_hint">Multiple entries: empty image + text and error image + button trigger the same callback; A enables all, B closes ERROR explicitly</string>
+    <string name="demo_multi_empty_retry">Tap to retry (text entry)</string>
+    <string name="demo_multi_empty_image_desc">Empty image retry entry</string>
+    <string name="demo_multi_error_image_desc">Error image retry entry</string>
+    <string name="demo_multi_retry_count">Retries: A=%1$d B=%2$d</string>
+    <string name="demo_multi_btn_toggle">Disable retries</string>
+    <string name="demo_multi_btn_disable">Disable retries</string>
+    <string name="demo_multi_btn_enable">Enable retries</string>
 </resources>

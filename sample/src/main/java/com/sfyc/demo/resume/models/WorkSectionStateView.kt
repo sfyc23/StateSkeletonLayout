@@ -47,7 +47,7 @@ class WorkSectionStateView(context: Context) : FrameLayout(context) {
         ).forEach { id ->
             stateLayout.setSkeletonNodeConfig(id, SkeletonNodeConfig(excluded = true))
         }
-        stateLayout.setOnRetryClickListener {
+        stateLayout.setOnRetryListener { _, _, _ ->
             onRetry?.invoke()
         }
         stateLayout.setOnRenderedStateChangedListener { _, _, newState, _ ->

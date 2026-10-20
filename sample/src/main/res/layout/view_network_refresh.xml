@@ -19,7 +19,7 @@
         app:ssl_initialState="content"
         app:ssl_emptyLayout="@layout/state_network_feed_empty"
         app:ssl_errorLayout="@layout/state_network_feed_error"
-        app:ssl_errorRetryViewId="@id/demo_retry"
+        app:ssl_errorRetryViewIds="@array/demo_single_retry_ids"
         app:ssl_useSkeleton="true"
         app:ssl_skeletonEffect="shimmer"
         app:ssl_skeletonSource="template"

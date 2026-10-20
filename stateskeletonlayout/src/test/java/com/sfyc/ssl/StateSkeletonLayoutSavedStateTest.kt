@@ -8,7 +8,9 @@ import android.view.View
 import android.widget.TextView
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -16,6 +18,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 /**
  * SavedState 往返一致性测试（P-02 的验收条件）。
@@ -95,7 +98,8 @@ class StateSkeletonLayoutSavedStateTest {
     fun `SavedState每个字段都经过Parcel往返`() {
         val layout = create()
         // 尽量把每个字段设成与默认值不同的值，避免"默认值相等"掩盖漏写。
-        layout.errorRetryViewId = R.id.ssl_test_retry
+        layout.setRetryViewIds(StateLayoutState.EMPTY, R.id.ssl_test_retry, R.id.ssl_test_retry_second)
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
         layout.retryClickThrottleMillis = 750L
         layout.retryClicksEnabled = false
         layout.useSkeleton = true
@@ -166,7 +170,8 @@ class StateSkeletonLayoutSavedStateTest {
     @Test
     fun `往返后的配置可用于恢复实例`() {
         val layout = create()
-        layout.errorRetryViewId = R.id.ssl_test_retry
+        layout.setRetryViewIds(StateLayoutState.EMPTY, R.id.ssl_test_retry, R.id.ssl_test_retry_second)
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
         layout.retryClicksEnabled = false
         layout.showError()
 
@@ -180,6 +185,126 @@ class StateSkeletonLayoutSavedStateTest {
         restored.restoreHierarchyState(stored)
 
         assertEquals(StateLayoutState.ERROR, restored.renderedState)
+        assertEquals(
+            listOf(R.id.ssl_test_retry, R.id.ssl_test_retry_second),
+            restored.getRetryViewIds(StateLayoutState.EMPTY),
+        )
+        assertEquals(listOf(R.id.ssl_test_retry), restored.getRetryViewIds(StateLayoutState.ERROR))
         assertNotNull(restored.getStateView(StateLayoutState.ERROR)?.findViewById<View>(R.id.ssl_test_retry))
+    }
+
+    @Test
+    fun `显式关闭往返后仍关闭且无效格式拒绝恢复`() {
+        val layout = create()
+        layout.setRetryViewIds(StateLayoutState.EMPTY)
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
+        layout.showEmpty()
+
+        val stored = SparseArray<Parcelable>()
+        layout.saveHierarchyState(stored)
+
+        val restored = StateSkeletonLayout(activity).apply {
+            id = layout.id
+            setContentView(TextView(activity))
+        }
+        restored.restoreHierarchyState(stored)
+        assertTrue(restored.getRetryViewIds(StateLayoutState.EMPTY).isEmpty())
+        assertEquals(listOf(R.id.ssl_test_retry), restored.getRetryViewIds(StateLayoutState.ERROR))
+
+        // 无效格式：版本号篡改后写入拒绝。
+        val bad = (stored[layout.id] as StateSkeletonLayout.SavedState).apply {
+            formatVersion = StateSkeletonLayout.SavedState.CURRENT_FORMAT_VERSION + 1
+        }
+        val parcel = Parcel.obtain()
+        try {
+            val failure = runCatching { bad.writeToParcel(parcel, 0) }.exceptionOrNull()
+            assertTrue(failure is IllegalArgumentException)
+        } finally {
+            parcel.recycle()
+        }
+    }
+
+    @Test
+    fun `恢复显式关闭时解绑已创建错误页的默认重试入口`() {
+        val source = StateSkeletonLayout(activity).apply {
+            id = View.generateViewId()
+            transitionEffect = StateTransitionEffect.NONE
+            setContentView(TextView(activity))
+            setRetryViewIds(StateLayoutState.ERROR)
+            showError()
+        }
+        val stored = SparseArray<Parcelable>().apply { put(source.id, roundTrip(source)) }
+        val restored = StateSkeletonLayout(activity).apply {
+            id = source.id
+            transitionEffect = StateTransitionEffect.NONE
+            setContentView(TextView(activity))
+        }
+        var clicks = 0
+        restored.setOnRetryListener { _, _, _ -> clicks++ }
+        attach(restored)
+        restored.showError()
+        val root = checkNotNull(restored.getStateView(StateLayoutState.ERROR))
+        val retry = root.findViewById<View>(R.id.ssl_builtin_state_retry)
+        assertTrue(retry.hasOnClickListeners())
+
+        restored.restoreHierarchyState(stored)
+
+        assertSame(root, restored.getStateView(StateLayoutState.ERROR))
+        assertTrue(restored.getRetryViewIds(StateLayoutState.ERROR).isEmpty())
+        retry.performClick()
+        assertEquals(0, clicks)
+        assertFalse(retry.hasOnClickListeners())
+    }
+
+    @Test
+    fun `恢复多入口时重新绑定已缓存的空态和错误页`() {
+        val source = create().apply {
+            setStateViewLayout(StateLayoutState.EMPTY, R.layout.ssl_test_state_retry_multi)
+            setStateViewLayout(StateLayoutState.ERROR, R.layout.ssl_test_state_retry_multi)
+            setRetryViewIds(StateLayoutState.EMPTY, R.id.ssl_test_multi_empty_image, R.id.ssl_test_multi_empty_text)
+            setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_multi_error_image, R.id.ssl_test_multi_error_button)
+            retryClickThrottleMillis = 0
+        }
+        val stored = SparseArray<Parcelable>().apply { put(source.id, roundTrip(source)) }
+        val restored = create().apply {
+            id = source.id
+            setStateViewLayout(StateLayoutState.EMPTY, R.layout.ssl_test_state_retry_multi)
+            setStateViewLayout(StateLayoutState.ERROR, R.layout.ssl_test_state_retry_multi)
+            setRetryViewIds(StateLayoutState.EMPTY, R.id.ssl_test_multi_empty_image)
+            setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_multi_error_image)
+        }
+        val clicks = mutableListOf<Int>()
+        restored.setOnRetryListener { _, _, clickedView -> clicks += clickedView.id }
+        attach(restored)
+        restored.showEmpty()
+        val emptyRoot = checkNotNull(restored.getStateView(StateLayoutState.EMPTY))
+        restored.showError()
+        val errorRoot = checkNotNull(restored.getStateView(StateLayoutState.ERROR))
+
+        restored.restoreHierarchyState(stored)
+
+        restored.showEmpty()
+        assertSame(emptyRoot, restored.getStateView(StateLayoutState.EMPTY))
+        emptyRoot.findViewById<View>(R.id.ssl_test_multi_empty_image).performClick()
+        emptyRoot.findViewById<View>(R.id.ssl_test_multi_empty_text).performClick()
+        restored.showError()
+        assertSame(errorRoot, restored.getStateView(StateLayoutState.ERROR))
+        errorRoot.findViewById<View>(R.id.ssl_test_multi_error_image).performClick()
+        errorRoot.findViewById<View>(R.id.ssl_test_multi_error_button).performClick()
+        assertEquals(
+            listOf(R.id.ssl_test_multi_empty_image, R.id.ssl_test_multi_empty_text,
+                R.id.ssl_test_multi_error_image, R.id.ssl_test_multi_error_button),
+            clicks,
+        )
+    }
+
+    private fun attach(layout: StateSkeletonLayout) {
+        activity.setContentView(layout)
+        ShadowLooper.idleMainLooper()
+        layout.measure(
+            View.MeasureSpec.makeMeasureSpec(240, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(160, View.MeasureSpec.EXACTLY),
+        )
+        layout.layout(0, 0, 240, 160)
     }
 }

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 多重试入口测试 ID：由布局 @+id 生成，此处再声明以便数组提前引用。 -->
+    <item name="ssl_test_retry_second" type="id" />
+    <item name="ssl_test_multi_empty_image" type="id" />
+    <item name="ssl_test_multi_empty_text" type="id" />
+    <item name="ssl_test_multi_error_image" type="id" />
+    <item name="ssl_test_multi_error_button" type="id" />
+    <item name="ssl_test_priority_direct_empty" type="id" />
+    <item name="ssl_test_priority_direct_error" type="id" />
+    <item name="ssl_test_priority_style_empty" type="id" />
+    <item name="ssl_test_priority_style_error" type="id" />
+    <item name="ssl_test_priority_theme_empty" type="id" />
+    <item name="ssl_test_priority_theme_error" type="id" />
+    <item name="ssl_test_priority_global_empty" type="id" />
+    <item name="ssl_test_priority_global_error" type="id" />
+
+    <!-- 单元素数组：存量单入口测试迁移为共享引用。 -->
+    <array name="ssl_test_single_retry_ids">
+        <item>@id/ssl_test_retry</item>
+    </array>
+
+    <!-- 多入口有效数组。 -->
+    <array name="ssl_test_multi_empty_ids">
+        <item>@id/ssl_test_multi_empty_image</item>
+        <item>@id/ssl_test_multi_empty_text</item>
+    </array>
+    <array name="ssl_test_multi_error_ids">
+        <item>@id/ssl_test_multi_error_image</item>
+        <item>@id/ssl_test_multi_error_button</item>
+    </array>
+
+    <!-- 显式关闭：空数组是有效配置，不因长度为 0 而丢弃。 -->
+    <array name="ssl_test_no_retry_ids" />
+
+    <!-- 优先级夹具：每层用不同 ID，避免值相同导致优先级错误却测试通过。 -->
+    <array name="ssl_test_retry_direct_empty">
+        <item>@id/ssl_test_priority_direct_empty</item>
+    </array>
+    <array name="ssl_test_retry_direct_error">
+        <item>@id/ssl_test_priority_direct_error</item>
+    </array>
+    <array name="ssl_test_retry_style_empty">
+        <item>@id/ssl_test_priority_style_empty</item>
+    </array>
+    <array name="ssl_test_retry_style_error">
+        <item>@id/ssl_test_priority_style_error</item>
+    </array>
+    <array name="ssl_test_retry_theme_empty">
+        <item>@id/ssl_test_priority_theme_empty</item>
+    </array>
+    <array name="ssl_test_retry_theme_error">
+        <item>@id/ssl_test_priority_theme_error</item>
+    </array>
+
+    <!-- 错误类型数组：混入字符串，解析时应抛出来自属性名与下标的异常。 -->
+    <array name="ssl_test_retry_invalid_type">
+        <item>@string/ssl_builtin_retry</item>
+    </array>
+    <!-- 空条目数组：@null 解析为 0，同样拒绝。 -->
+    <array name="ssl_test_retry_invalid_empty">
+        <item>@null</item>
+    </array>
+
+    <!-- 重试优先级 Theme：默认 style 携带主题层数组。 -->
+    <style name="ssl_TestRetryDefaults" parent="ssl_StateSkeletonLayout">
+        <item name="ssl_emptyRetryViewIds">@array/ssl_test_retry_theme_empty</item>
+        <item name="ssl_errorRetryViewIds">@array/ssl_test_retry_theme_error</item>
+    </style>
+    <style name="ssl_TestRetryTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="ssl_stateSkeletonLayoutStyle">@style/ssl_TestRetryDefaults</item>
+    </style>
+
+    <!-- 重试优先级显式 style（含父 style）：父提供 EMPTY，子覆盖 ERROR，验证合并后各自生效。 -->
+    <style name="ssl_TestRetryPageParent" parent="">
+        <item name="ssl_emptyRetryViewIds">@array/ssl_test_retry_style_empty</item>
+    </style>
+    <style name="ssl_TestRetryPage" parent="ssl_TestRetryPageParent">
+        <item name="ssl_errorRetryViewIds">@array/ssl_test_retry_style_error</item>
+    </style>
+</resources>

@@ -2,8 +2,8 @@
 <!--
   库内置错误态布局：宿主未配置 ssl_errorLayout 时的兜底页面。
 
-  重试按钮 ID 固定为 ssl_builtin_state_retry；未显式配置 ssl_errorRetryViewId 时，
-  控件会自动把它作为统一重试入口绑定，宿主无需再配置。
+  重试按钮 ID 固定为 ssl_builtin_state_retry；未显式配置重试入口时，
+  控件按统一默认列表机制自动把它作为错误态默认入口绑定，宿主无需再配置。
 
   按钮用 android.widget.Button 而非 MaterialButton，保持零额外依赖。
 -->

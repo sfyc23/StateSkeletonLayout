@@ -17,6 +17,7 @@ import com.sfyc.demo.listskeleton.ListSkeletonDemoFragment
 import com.sfyc.demo.lottie.LottieLoadingFragment
 import com.sfyc.demo.network.FeedDemoFragment
 import com.sfyc.demo.resume.ResumeDemoFragment
+import com.sfyc.demo.retry.MultiRetryDemoFragment
 import com.sfyc.demo.rapid.RapidStateFragment
 import com.sfyc.demo.recycler.ItemReuseSkeletonFragment
 import com.sfyc.demo.recycler.RecyclerSkeletonFragment
@@ -37,6 +38,7 @@ object DemoCatalog {
 
     val entries: List<Entry> = listOf(
         Entry("基础四态", "手动切换 Content / Loading / Empty / Error，验证重试事件", ::BasicFourStateFragment),
+        Entry("多重试入口", "空态图片 + 文字、错误态图片 + 按钮触发同一回调，含独立实例与禁用", ::MultiRetryDemoFragment),
         Entry("内置状态页", "不配置 empty / error 布局也能直接用，重试入口由库自动接管", ::BuiltInStateDemoFragment),
         Entry("内容取形", "根据真实资料卡片生成 Shimmer 骨架", ::ContentShapeFragment),
         Entry("模板取形", "内容无尺寸时使用独立模板骨架", ::TemplateFragment),

@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Looper
 import android.os.Parcel
 import android.os.Parcelable
-import android.os.SystemClock
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
@@ -20,6 +19,7 @@ import androidx.annotation.LayoutRes
 import androidx.annotation.MainThread
 import com.sfyc.ssl.internal.SslDefaultsMerger
 import com.sfyc.ssl.internal.StateCoordinator
+import com.sfyc.ssl.internal.StateRetryController
 import com.sfyc.ssl.internal.StateViewRegistry
 import com.sfyc.ssl.internal.TransitionController
 import com.sfyc.ssl.internal.InteractionHost
@@ -259,40 +259,29 @@ class StateSkeletonLayout @JvmOverloads constructor(
             field = value
         }
 
-    /** 重试按钮 ID；更换时解除旧入口并绑定已缓存的错误页。 */
     @get:MainThread
     @set:MainThread
-    var errorRetryViewId: Int = 0
-        set(value) {
-            checkMainThread("errorRetryViewId")
-            require(value != View.NO_ID) { "errorRetryViewId 不能为 View.NO_ID；0 表示关闭统一重试" }
-            if (field == value) return
-            // 按各布局实际绑定的 ID 解绑，再给当前错误页绑定新入口。
-            unbindRetry()
-            field = value
-            lastRetryClickMillis = null
-            if (::registry.isInitialized) registry.content(StateLayoutState.ERROR)
-                ?.let { bindRetryIfNeeded(StateLayoutState.ERROR, it) }
+    var retryClickThrottleMillis: Long
+        get() {
+            checkMainThread("retryClickThrottleMillis")
+            return retryController.retryClickThrottleMillis
         }
-
-    @get:MainThread
-    @set:MainThread
-    var retryClickThrottleMillis: Long = DEFAULT_RETRY_CLICK_THROTTLE_MILLIS
         set(value) {
             checkMainThread("retryClickThrottleMillis")
-            require(value >= 0L) { "retryClickThrottleMillis 不得小于 0" }
-            if (field == value) return
-            field = value
+            retryController.retryClickThrottleMillis = value
         }
 
     /** 是否接受重试事件；请求进行中可暂时关闭，控件不修改业务按钮的 enabled。 */
     @get:MainThread
     @set:MainThread
-    var retryClicksEnabled: Boolean = true
+    var retryClicksEnabled: Boolean
+        get() {
+            checkMainThread("retryClicksEnabled")
+            return retryController.retryClicksEnabled
+        }
         set(value) {
             checkMainThread("retryClicksEnabled")
-            if (field == value) return
-            field = value
+            retryController.retryClicksEnabled = value
         }
 
     // endregion
@@ -345,18 +334,16 @@ class StateSkeletonLayout @JvmOverloads constructor(
     /** 当前呈现的顶层 View；委托给控制器，保持既有读取语义。 */
     private val currentTop: View? get() = if (::transitions.isInitialized) transitions.currentTop else null
 
-    private var onRetryClickListener: OnClickListener? = null
+    private var onRetryListener: OnRetryListener? = null
     private var onStateViewCreatedListener: OnStateViewCreatedListener? = null
     private var onRenderedStateChangedListener: OnRenderedStateChangedListener? = null
 
-    private var lastRetryClickMillis: Long? = null
-
     /**
-     * 按错误页根节点记录实际绑定的 retryViewId。
-     *
-     * 替换事务中旧布局与候选布局可同时存在，各自释放或回滚时只清理自身入口。
+     * 多重试入口的唯一管理者：有效列表、绑定记录、开关与节流。
+     * 公开属性与保存快照均委托它，避免两处各存一份状态。
+     * 构造时尚未绑定状态根，初始化注册表后才做实际 View 绑定。
      */
-    private val boundRetryIds = mutableMapOf<View, Int>()
+    private val retryController: StateRetryController
     private var lastAnnouncedState: StateLayoutState? = null
     private var lastPresentedState: StateLayoutState = StateLayoutState.CONTENT
     private var savedContentA11yMode: Int = IMPORTANT_FOR_ACCESSIBILITY_AUTO
@@ -403,14 +390,38 @@ class StateSkeletonLayout @JvmOverloads constructor(
             ?: builtInLayoutOrZero(R.layout.ssl_builtin_state_error)
         customLoadingLayoutResId = xmlAttrs.customLoadingLayoutResId.takeIf { it != 0 } ?: themeAttrs.customLoadingLayoutResId
 
-        // 内置错误页自带重试按钮，此时默认接管统一重试入口，宿主无需再配置。
-        // 宿主提供了自己的 errorLayout 时不预设，避免指向不存在的 ID 并打无谓警告。
-        // 注意 takeIf 必须作用在两处取值上：errorRetryViewId 是非空 Int，
-        // 若只对 xml 侧做 takeIf，0 会顺着 Elvis 右侧继续传下去，兜底永远读不到。
-        val explicitRetryId = xmlAttrs.errorRetryViewId.takeIf { it != 0 }
-            ?: themeAttrs.errorRetryViewId.takeIf { it != 0 }
-        errorRetryViewId = explicitRetryId
-            ?: if (usingBuiltInErrorLayout) R.id.ssl_builtin_state_retry else 0
+        // 创建尚未绑定状态根的控制器 → 解析声明与最终布局来源 → 安装有效列表。
+        // 库默认：EMPTY 为空；ERROR 在使用库内置错误布局时为内置按钮，否则为空。
+        // 显式列表不自动追加内置按钮；显式空列表可关闭内置按钮。
+        val declaredEmpty = merged.emptyRetryViewIds
+        val declaredError = merged.errorRetryViewIds
+        val libraryEmpty = emptyList<Int>()
+        val libraryError = if (usingBuiltInErrorLayout) {
+            listOf(R.id.ssl_builtin_state_retry)
+        } else {
+            emptyList()
+        }
+        retryController = StateRetryController(
+            emptyViewIds = declaredEmpty ?: libraryEmpty,
+            errorViewIds = declaredError ?: libraryError,
+            gates = object : StateRetryController.Gates {
+                override fun renderedState(): StateLayoutState = this@StateSkeletonLayout.renderedState
+                override fun requestedState(): StateLayoutState = this@StateSkeletonLayout.requestedState
+                override fun isAttached(): Boolean = this@StateSkeletonLayout.isAttachedToWindow
+                override fun isAggregatedVisible(): Boolean = aggregatedVisible
+                override fun isShown(): Boolean = this@StateSkeletonLayout.isShown
+                override fun cachedRoot(state: StateLayoutState): View? =
+                    if (::registry.isInitialized) registry.content(state) else null
+                override fun wrapperFor(state: StateLayoutState): View? =
+                    if (::registry.isInitialized) registry.peek(state) else null
+                override fun currentTop(): View? = this@StateSkeletonLayout.currentTop
+                override fun hostView(): View = this@StateSkeletonLayout
+                override fun retryListener(): Any? = onRetryListener
+                override fun dispatch(state: StateLayoutState, clickedView: View) {
+                    onRetryListener?.onRetry(this@StateSkeletonLayout, state, clickedView)
+                }
+            },
+        )
 
         initialState = merged.initialState
         useSkeleton = merged.useSkeleton
@@ -593,11 +604,11 @@ class StateSkeletonLayout @JvmOverloads constructor(
     private fun initRuntime() {
         registry = StateViewRegistry(context, stateHost) { state, view ->
             try {
-                bindRetryIfNeeded(state, view)
+                retryController.bind(state, view)
                 withBindingCallback { onStateViewCreatedListener?.onStateViewCreated(this, state, view) }
             } catch (failure: Throwable) {
                 // 未提交的候选不能残留监听与根节点引用，也不能影响原布局的绑定。
-                unbindRetry(view)
+                retryController.unbindRoot(view)
                 throw failure
             }
         }
@@ -753,20 +764,23 @@ class StateSkeletonLayout @JvmOverloads constructor(
      * # 为什么需要
      *
      * 逐个 setter 配置一个完整实例需要 8–10 次调用：
-     * `setStateViewLayout` ×3、`errorRetryViewId`、`retryClickThrottleMillis`、
+     * `setStateViewLayout` ×3、重试配置、`retryClickThrottleMillis`、
      * `useSkeleton`、`skeletonConfig`、`transitionEffect`……
      * 程序化创建路径（没有 XML 可写）尤其冗长。
      *
      * 本方法不引入新的状态，只是把既有 setter 按固定顺序调用一遍：
-     * 每个字段为 `null` / `0` 时跳过该项，保留当前值。
+     * 每个字段为 `null` 时跳过该项，保留当前值。
      * 已有 setter 全部保留可用，两种入口可以混用。
      *
      * # 顺序
      *
      * 先布局资源、再重试入口、最后渲染配置。布局资源在前是因为
-     * `errorRetryViewId` 的绑定会查找错误页缓存——错误页尚未创建时
+     * 重试入口的绑定会查找已缓存状态页——状态页尚未创建时
      * 仅记录 ID，创建时再绑定，因此顺序对结果无影响；但先声明布局
-     * 能让同一批里的 `errorRetryViewId` 立即生效于已缓存的错误页。
+     * 能让同一批里的重试配置立即生效于已缓存的状态页。
+     *
+     * 重试配置自身一致提交：先完成两个列表的规范化与校验，再交给控制器一次提交，
+     * 不通过按字段先后赋值制造部分生效状态。这里只保证重试配置自身的一致提交。
      *
      * # 示例
      *
@@ -776,7 +790,10 @@ class StateSkeletonLayout @JvmOverloads constructor(
      *     SslLayoutOptions(
      *         emptyLayoutResId = R.layout.state_empty,
      *         errorLayoutResId = R.layout.state_error,
-     *         errorRetryViewId = R.id.retry_button,
+     *         retryConfig = StateRetryConfig(
+     *             emptyViewIds = listOf(R.id.retry_empty),
+     *             errorViewIds = listOf(R.id.retry_button),
+     *         ),
      *         useSkeleton = true,
      *         skeletonConfig = SkeletonConfig(effect = SkeletonEffect.PULSE),
      *     )
@@ -790,7 +807,11 @@ class StateSkeletonLayout @JvmOverloads constructor(
         options.emptyLayoutResId?.let { setStateViewLayout(StateLayoutState.EMPTY, it) }
         options.errorLayoutResId?.let { setStateViewLayout(StateLayoutState.ERROR, it) }
         options.loadingLayoutResId?.let { setStateViewLayout(StateLayoutState.LOADING, it) }
-        options.errorRetryViewId?.let { errorRetryViewId = it }
+        options.retryConfig?.let { config ->
+            val emptyRoot = if (::registry.isInitialized) registry.content(StateLayoutState.EMPTY) else null
+            val errorRoot = if (::registry.isInitialized) registry.content(StateLayoutState.ERROR) else null
+            retryController.replaceBoth(config.emptyViewIds, config.errorViewIds, emptyRoot, errorRoot)
+        }
         options.retryClickThrottleMillis?.let { retryClickThrottleMillis = it }
         options.retryClicksEnabled?.let { retryClicksEnabled = it }
         options.useSkeleton?.let { useSkeleton = it }
@@ -974,11 +995,44 @@ class StateSkeletonLayout @JvmOverloads constructor(
         onStateViewReleasedListener = listener
     }
 
-    /** 注册错误页重试点击监听（单向事件；控件不自动切换状态、不发起请求）。 */
+    /** 注册统一重试回调（单向事件；控件不自动切换状态、不发起请求）。 */
     @MainThread
-    fun setOnRetryClickListener(listener: OnClickListener?) {
-        checkMainThread("setOnRetryClickListener")
-        onRetryClickListener = listener
+    fun setOnRetryListener(listener: OnRetryListener?) {
+        checkMainThread("setOnRetryListener")
+        onRetryListener = listener
+    }
+
+    /**
+     * 替换指定状态的完整重试入口列表；无 ID 表示显式关闭该状态。
+     *
+     * 只接受 EMPTY / ERROR；传入 CONTENT / LOADING 抛出包含状态名的异常。
+     * 相同列表重复赋值为空操作，不重绑、不重置节流窗口。
+     */
+    @MainThread
+    fun setRetryViewIds(state: StateLayoutState, vararg viewIds: Int) {
+        checkMainThread("setRetryViewIds")
+        require(state == StateLayoutState.EMPTY || state == StateLayoutState.ERROR) {
+            "setRetryViewIds 仅支持 EMPTY / ERROR，当前=$state"
+        }
+        val normalized = normalizeRetryIds(
+            viewIds.toList(),
+            if (state == StateLayoutState.EMPTY) "emptyViewIds" else "errorViewIds",
+        ) ?: emptyList()
+        val cached = if (::registry.isInitialized) registry.content(state) else null
+        retryController.replace(state, normalized, cached)
+    }
+
+    /**
+     * 返回最终有效配置的不可修改快照，包括尚未找到 View 的已配置 ID。
+     * 只读查询，不创建布局；允许在状态页创建回调中调用。
+     */
+    @MainThread
+    fun getRetryViewIds(state: StateLayoutState): List<Int> {
+        checkMainThread("getRetryViewIds")
+        require(state == StateLayoutState.EMPTY || state == StateLayoutState.ERROR) {
+            "getRetryViewIds 仅支持 EMPTY / ERROR，当前=$state"
+        }
+        return retryController.getIds(state).toList()
     }
 
     /** 注册状态 View 首次创建回调（绑定动态控件、查找 Lottie 等）。 */
@@ -1138,7 +1192,7 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
     // endregion
 
-    // region 回调与重试
+    // region 回调与重试（绑定、门禁与节流由 StateRetryController 统一管理）
 
     private fun notifyRendered(state: StateLayoutState) {
         val old = lastPresentedState
@@ -1160,50 +1214,6 @@ class StateSkeletonLayout @JvmOverloads constructor(
             StateLayoutState.EMPTY -> registry.content(StateLayoutState.EMPTY)
             StateLayoutState.ERROR -> registry.content(StateLayoutState.ERROR)
         }
-    }
-
-    // 错误页首次创建时绑定统一重试入口：只发事件，不自动切换状态。
-    private fun bindRetryIfNeeded(state: StateLayoutState, view: View) {
-        if (state != StateLayoutState.ERROR || errorRetryViewId == 0) return
-        val retryId = errorRetryViewId
-        val retryView = view.findViewById<View>(retryId)
-        if (retryView == null) {
-            Log.w(
-                TAG,
-                "ssl_errorRetryViewId 指向的 View 在错误布局中不存在，" +
-                    "请检查 ID 是否写在 @layout 指向的错误布局内部",
-            )
-            return
-        }
-        retryView.setOnClickListener {
-            // 统一防重复点击，避免快速连点产生重复业务意图。
-            if (!retryClicksEnabled || renderedState != StateLayoutState.ERROR ||
-                registry.content(StateLayoutState.ERROR) !== view ||
-                currentTop !== registry.peek(StateLayoutState.ERROR)) return@setOnClickListener
-            val now = SystemClock.uptimeMillis()
-            val lastClick = lastRetryClickMillis
-            if (lastClick != null && now - lastClick < retryClickThrottleMillis) {
-                return@setOnClickListener
-            }
-            lastRetryClickMillis = now
-            onRetryClickListener?.onClick(it)
-        }
-        boundRetryIds[view] = retryId
-    }
-
-    /**
-     * 解除错误页上的统一重试入口。
-     *
-     * 用绑定当时记录的 ID 与根节点解绑，而不是读当前 [errorRetryViewId]。
-     * 这样「换 ID」与「释放状态页」两条路径不再互相依赖对方的时序。
-     */
-    private fun unbindRetry() {
-        boundRetryIds.keys.toList().forEach { unbindRetry(it) }
-    }
-
-    private fun unbindRetry(view: View) {
-        val retryId = boundRetryIds.remove(view) ?: return
-        view.findViewById<View>(retryId)?.setOnClickListener(null)
     }
 
     // endregion
@@ -1333,13 +1343,19 @@ class StateSkeletonLayout @JvmOverloads constructor(
     override fun onSaveInstanceState(): Parcelable {
         val superState = super.onSaveInstanceState()
         return SavedState(superState).apply {
+            // 1. 请求状态与状态布局资源。
             requestedOrdinal = requestedState.ordinal
+            emptyResource = if (hostsInitialized) registry.layoutResource(StateLayoutState.EMPTY) else emptyLayoutResId
+            errorResource = if (hostsInitialized) registry.layoutResource(StateLayoutState.ERROR) else errorLayoutResId
+            loadingResource = if (hostsInitialized) registry.layoutResource(StateLayoutState.LOADING) else customLoadingLayoutResId
+            // 2. Loading 时序、过渡效果与状态播报策略。
             useSkeletonFlag = useSkeleton
+            showDelay = loadingShowDelayMillis
+            minDuration = minimumLoadingDurationMillis
             transitionOrdinal = transitionEffect.ordinal
             transitionDuration = transitionDurationMillis
             announce = announceStateChanges
-            showDelay = loadingShowDelayMillis
-            minDuration = minimumLoadingDurationMillis
+            // 3. 骨架配置、节点规则及条目拼装声明。
             val config = skeletonConfig
             skeletonSourceOrdinal = config.source.ordinal
             skeletonTemplateResId = config.templateLayoutResId ?: 0
@@ -1353,18 +1369,18 @@ class StateSkeletonLayout @JvmOverloads constructor(
             pulseMin = config.pulseMinAlpha
             pulseMax = config.pulseMaxAlpha
             maximumPixels = config.maximumMaskPixels
-            emptyResource = if (hostsInitialized) registry.layoutResource(StateLayoutState.EMPTY) else emptyLayoutResId
-            errorResource = if (hostsInitialized) registry.layoutResource(StateLayoutState.ERROR) else errorLayoutResId
-            loadingResource = if (hostsInitialized) registry.layoutResource(StateLayoutState.LOADING) else customLoadingLayoutResId
-            retryViewId = errorRetryViewId
-            retryThrottle = retryClickThrottleMillis
-            retryEnabled = retryClicksEnabled
             nodeRules.putAll(nodeConfigs)
-            descriptions.putAll(stateDescriptions.mapValues { it.value.toString() })
             // binder 不可序列化：只保存布局与条数，恢复后 binder 置空（见 applyRestoredState）。
             val items = skeletonItems?.takeIf { it.isNotEmpty() }
             skeletonItemLayouts = items?.map { it.layoutResId } ?: emptyList()
             skeletonItemCounts = items?.map { it.count } ?: emptyList()
+            // 4. 状态描述。
+            descriptions.putAll(stateDescriptions.mapValues { it.value.toString() })
+            // 5. 重试配置快照：最终有效列表（不只保存找到的 View），空列表写入数量 0。
+            emptyRetryViewIds = retryController.snapshotEmpty()
+            errorRetryViewIds = retryController.snapshotError()
+            retryThrottle = retryController.retryClickThrottleMillis
+            retryEnabled = retryController.retryClicksEnabled
         }
     }
 
@@ -1379,39 +1395,20 @@ class StateSkeletonLayout @JvmOverloads constructor(
     }
 
     private fun applyRestoredState(state: SavedState) {
-        initialApplied = true
-        explicitRequest = true
-        syncLoadingVisibility(forceHidden = true)
-        transitions.cancelAll()
-        skeletonRenderer.hide()
-        layoutRenderer.hide()
-        coordinator.restore(StateLayoutState.CONTENT)
-        val released = mutableListOf<Pair<StateLayoutState, View>>()
-        listOf(StateLayoutState.EMPTY to state.emptyResource,
-            StateLayoutState.ERROR to state.errorResource,
-            StateLayoutState.LOADING to state.loadingResource).forEach { (target, resource) ->
-            val old = if (resource != 0) registry.setLayout(target, resource)
-                else if (state.formatVersion >= 2) registry.clearLayout(target) else null
-            old?.let { released += target to it }
+        // 单一当前格式：标记或版本不匹配明确拒绝，不尝试单 ID 转列表；校验完成前不修改实例。
+        require(state.formatVersion == SavedState.CURRENT_FORMAT_VERSION) {
+            "SavedState 版本不匹配：期望=${SavedState.CURRENT_FORMAT_VERSION}，实际=${state.formatVersion}"
         }
-        if (state.formatVersion >= 2) errorRetryViewId = state.retryViewId
-        retryClickThrottleMillis = state.retryThrottle.coerceAtLeast(0)
-        retryClicksEnabled = state.retryEnabled
-        nodeConfigs.clear()
-        nodeConfigs.putAll(state.nodeRules)
-        stateDescriptions.clear()
-        stateDescriptions.putAll(state.descriptions)
+        // 先得到完整配置快照并校验，再更新布局与控制器。
+        val restoredEmpty = normalizeRetryIds(state.emptyRetryViewIds, "emptyViewIds") ?: emptyList()
+        val restoredError = normalizeRetryIds(state.errorRetryViewIds, "errorViewIds") ?: emptyList()
+        require(state.retryThrottle >= 0L) { "SavedState 重试节流非法：${state.retryThrottle}" }
         val requested = StateLayoutState.entries.getOrElse(state.requestedOrdinal) {
             StateLayoutState.CONTENT
         }
-        useSkeleton = state.useSkeletonFlag
-        transitionEffect = StateTransitionEffect.entries.getOrElse(state.transitionOrdinal) {
+        val restoredEffect = StateTransitionEffect.entries.getOrElse(state.transitionOrdinal) {
             StateTransitionEffect.CROSSFADE
         }
-        transitionDurationMillis = state.transitionDuration.coerceAtLeast(0L)
-        announceStateChanges = state.announce
-        loadingShowDelayMillis = state.showDelay.coerceAtLeast(0L)
-        minimumLoadingDurationMillis = state.minDuration.coerceAtLeast(0L)
         val restoredConfig = SkeletonConfig(
             source = SkeletonSource.entries.getOrElse(state.skeletonSourceOrdinal) {
                 SkeletonSource.CONTENT
@@ -1432,27 +1429,15 @@ class StateSkeletonLayout @JvmOverloads constructor(
             pulseMaxAlpha = state.pulseMax,
             maximumMaskPixels = state.maximumPixels.takeIf { it > 0 } ?: Long.MAX_VALUE,
         )
-        // 原子恢复两者：分步走 setter 必然经过“两者并存 / 两者皆空”的非法中间态，
-        // 故先统一校验最终态，再直写 backing field，最后统一通知渲染器。
-        val restoredItems: List<SkeletonItemSpec>? = if (state.formatVersion >= 3) {
-            val layouts = state.skeletonItemLayouts
-            val counts = state.skeletonItemCounts
-            if (layouts.isEmpty()) {
-                null
-            } else if (layouts.size == counts.size) {
-                layouts.mapIndexed { index, layoutResId ->
-                    SkeletonItemSpec(layoutResId, counts[index])
-                }
-            } else {
-                android.util.Log.w(
-                    "StateSkeletonLayout",
-                    "SavedState 条目布局与条数不匹配，已清空条目拼装声明",
-                )
-                null
-            }
-        } else {
-            // v1/v2 时代无 T2 条目：按保存时的状态恢复（无条目），不保留当前 XML 声明。
+        val layouts = state.skeletonItemLayouts
+        val counts = state.skeletonItemCounts
+        require(layouts.size == counts.size) { "SavedState 条目布局与条数不匹配" }
+        val restoredItems: List<SkeletonItemSpec>? = if (layouts.isEmpty()) {
             null
+        } else {
+            layouts.mapIndexed { index, layoutResId ->
+                SkeletonItemSpec(layoutResId, counts[index])
+            }
         }
         if (restoredItems != null && BuildConfig.DEBUG) {
             android.util.Log.d(
@@ -1461,6 +1446,50 @@ class StateSkeletonLayout @JvmOverloads constructor(
             )
         }
         validateTemplateResource(restoredConfig, restoredItems)
+        // 预校验布局资源，避免部分生效。
+        listOf(
+            StateLayoutState.EMPTY to state.emptyResource,
+            StateLayoutState.ERROR to state.errorResource,
+            StateLayoutState.LOADING to state.loadingResource,
+        ).forEach { (target, resource) ->
+            if (resource != 0) registry.checkResource(target, resource)
+        }
+
+        initialApplied = true
+        explicitRequest = true
+        syncLoadingVisibility(forceHidden = true)
+        transitions.cancelAll()
+        skeletonRenderer.hide()
+        layoutRenderer.hide()
+        coordinator.restore(StateLayoutState.CONTENT)
+        val released = mutableListOf<Pair<StateLayoutState, View>>()
+        listOf(StateLayoutState.EMPTY to state.emptyResource,
+            StateLayoutState.ERROR to state.errorResource,
+            StateLayoutState.LOADING to state.loadingResource).forEach { (target, resource) ->
+            val old = if (resource != 0) registry.setLayout(target, resource)
+                else registry.clearLayout(target)
+            old?.let { released += target to it }
+        }
+        // 保存的最终列表优先于重建实例的声明；恢复后运行时 setter 仍可覆盖。
+        retryController.installInitial(restoredEmpty, restoredError)
+        // 相同布局资源会保留缓存根；恢复后的列表也必须更新这些根的实际监听。
+        listOf(StateLayoutState.EMPTY, StateLayoutState.ERROR).forEach { target ->
+            registry.content(target)?.let { retryController.bind(target, it) }
+        }
+        retryController.retryClickThrottleMillis = state.retryThrottle.coerceAtLeast(0)
+        retryController.retryClicksEnabled = state.retryEnabled
+        nodeConfigs.clear()
+        nodeConfigs.putAll(state.nodeRules)
+        stateDescriptions.clear()
+        stateDescriptions.putAll(state.descriptions)
+        useSkeleton = state.useSkeletonFlag
+        transitionEffect = restoredEffect
+        transitionDurationMillis = state.transitionDuration.coerceAtLeast(0L)
+        announceStateChanges = state.announce
+        loadingShowDelayMillis = state.showDelay.coerceAtLeast(0L)
+        minimumLoadingDurationMillis = state.minDuration.coerceAtLeast(0L)
+        // 原子恢复两者：分步走 setter 必然经过“两者并存 / 两者皆空”的非法中间态，
+        // 故先统一校验最终态，再直写 backing field，最后统一通知渲染器。
         skeletonConfigField = restoredConfig
         skeletonItemsField = restoredItems
         if (::skeletonRenderer.isInitialized) {
@@ -1474,17 +1503,28 @@ class StateSkeletonLayout @JvmOverloads constructor(
     /**
      * 自定义保存状态：只保存请求状态与运行时配置标识，
      * 不保存 Listener / Bitmap / Animator / 业务数据与绝对时间。
+     *
+     * 字段按以下分组保存，读写顺序保持一致：
+     * 1. 请求状态与状态布局资源；2. Loading 时序、过渡效果与状态播报策略；
+     * 3. 骨架配置、节点规则及条目拼装声明；4. 状态描述；
+     * 5. 重试配置快照（EMPTY 列表、ERROR 列表、节流间隔与可用开关）。
      */
     class SavedState : BaseSavedState {
         internal var formatVersion: Int = CURRENT_FORMAT_VERSION
 
+        // 1. 请求状态与状态布局资源。
         var requestedOrdinal: Int = StateLayoutState.CONTENT.ordinal
+        var emptyResource: Int = 0
+        var errorResource: Int = 0
+        var loadingResource: Int = 0
+        // 2. Loading 时序、过渡效果与状态播报策略。
         var useSkeletonFlag: Boolean = false
+        var showDelay: Long = 0L
+        var minDuration: Long = StateCoordinator.DEFAULT_MINIMUM_LOADING_DURATION_MILLIS
         var transitionOrdinal: Int = StateTransitionEffect.CROSSFADE.ordinal
         var transitionDuration: Long = DEFAULT_TRANSITION_DURATION_MILLIS
         var announce: Boolean = true
-        var showDelay: Long = 0L
-        var minDuration: Long = StateCoordinator.DEFAULT_MINIMUM_LOADING_DURATION_MILLIS
+        // 3. 骨架配置、节点规则及条目拼装声明。
         var skeletonSourceOrdinal: Int = SkeletonSource.CONTENT.ordinal
         var skeletonTemplateResId: Int = 0
         var skeletonEffectOrdinal: Int = SkeletonEffect.SHIMMER.ordinal
@@ -1497,31 +1537,41 @@ class StateSkeletonLayout @JvmOverloads constructor(
         var pulseMin: Float = SkeletonConfig.DEFAULT_PULSE_MIN_ALPHA
         var pulseMax: Float = SkeletonConfig.DEFAULT_PULSE_MAX_ALPHA
         var maximumPixels: Long = Long.MAX_VALUE
-        var emptyResource: Int = 0
-        var errorResource: Int = 0
-        var loadingResource: Int = 0
-        var retryViewId: Int = 0
-        var retryThrottle: Long = DEFAULT_RETRY_CLICK_THROTTLE_MILLIS
-        var retryEnabled: Boolean = true
         val nodeRules = mutableMapOf<Int, SkeletonNodeConfig>()
-        val descriptions = mutableMapOf<StateLayoutState, String>()
         // T2 条目拼装声明：只保存布局与条数，binder 不可序列化，恢复后置空。
         var skeletonItemLayouts: List<Int> = emptyList()
         var skeletonItemCounts: List<Int> = emptyList()
+        // 4. 状态描述。
+        val descriptions = mutableMapOf<StateLayoutState, String>()
+        // 5. 重试配置快照。
+        var emptyRetryViewIds: List<Int> = emptyList()
+        var errorRetryViewIds: List<Int> = emptyList()
+        var retryThrottle: Long = DEFAULT_RETRY_CLICK_THROTTLE_MILLIS
+        var retryEnabled: Boolean = true
 
         constructor(superState: Parcelable?) : super(superState)
 
         private constructor(parcel: Parcel) : super(parcel) {
             val marker = parcel.readInt()
-            val version = if (marker == FORMAT_MARKER) parcel.readInt() else 1
+            require(marker == FORMAT_MARKER) { "SavedState 格式标记不匹配" }
+            val version = parcel.readInt()
+            require(version == CURRENT_FORMAT_VERSION) {
+                "SavedState 版本不匹配：期望=$CURRENT_FORMAT_VERSION，实际=$version"
+            }
             formatVersion = version
-            requestedOrdinal = if (marker == FORMAT_MARKER) parcel.readInt() else marker
+            // 1. 请求状态与状态布局资源。
+            requestedOrdinal = parcel.readInt()
+            emptyResource = parcel.readInt()
+            errorResource = parcel.readInt()
+            loadingResource = parcel.readInt()
+            // 2. Loading 时序、过渡效果与状态播报策略。
             useSkeletonFlag = parcel.readInt() == 1
+            showDelay = parcel.readLong()
+            minDuration = parcel.readLong()
             transitionOrdinal = parcel.readInt()
             transitionDuration = parcel.readLong()
             announce = parcel.readInt() == 1
-            showDelay = parcel.readLong()
-            minDuration = parcel.readLong()
+            // 3. 骨架配置、节点规则及条目拼装声明。
             skeletonSourceOrdinal = parcel.readInt()
             skeletonTemplateResId = parcel.readInt()
             skeletonEffectOrdinal = parcel.readInt()
@@ -1533,42 +1583,48 @@ class StateSkeletonLayout @JvmOverloads constructor(
             angle = parcel.readInt()
             pulseMin = parcel.readFloat()
             pulseMax = parcel.readFloat()
-            if (version >= 2) {
-                maximumPixels = parcel.readLong()
-                emptyResource = parcel.readInt()
-                errorResource = parcel.readInt()
-                loadingResource = parcel.readInt()
-                retryViewId = parcel.readInt()
-                retryThrottle = parcel.readLong()
-                retryEnabled = parcel.readInt() == 1
-                val ruleCount = parcel.readInt()
-                require(ruleCount in 0..10000) { "SavedState 节点数量非法" }
-                repeat(ruleCount) {
-                    val id = parcel.readInt()
-                    val excluded = parcel.readInt() == 1
-                    val shape = SkeletonShape.entries.getOrElse(parcel.readInt()) { SkeletonShape.ROUNDED_RECTANGLE }
-                    val radius = if (parcel.readInt() == 1) parcel.readFloat() else null
-                    nodeRules[id] = SkeletonNodeConfig(excluded, shape, radius)
-                }
-                val descriptionCount = parcel.readInt()
-                require(descriptionCount in 0..StateLayoutState.entries.size) { "SavedState 描述数量非法" }
-                repeat(descriptionCount) {
-                    val target = StateLayoutState.entries.getOrElse(parcel.readInt()) { StateLayoutState.CONTENT }
-                    parcel.readString()?.let { descriptions[target] = it }
-                }
+            maximumPixels = parcel.readLong()
+            val ruleCount = parcel.readInt()
+            require(ruleCount in 0..10000) { "SavedState 节点数量非法" }
+            repeat(ruleCount) {
+                val id = parcel.readInt()
+                val excluded = parcel.readInt() == 1
+                val shape = SkeletonShape.entries.getOrElse(parcel.readInt()) { SkeletonShape.ROUNDED_RECTANGLE }
+                val radius = if (parcel.readInt() == 1) parcel.readFloat() else null
+                nodeRules[id] = SkeletonNodeConfig(excluded, shape, radius)
             }
-            if (version >= 3) {
-                val layoutCount = parcel.readInt()
-                require(layoutCount in 0..10000) { "SavedState 条目数量非法" }
-                val layouts = ArrayList<Int>(layoutCount)
-                repeat(layoutCount) { layouts += parcel.readInt() }
-                skeletonItemLayouts = layouts
-                val countsSize = parcel.readInt()
-                require(countsSize == layoutCount) { "SavedState 条目布局与条数不匹配" }
-                val counts = ArrayList<Int>(countsSize)
-                repeat(countsSize) { counts += parcel.readInt() }
-                skeletonItemCounts = counts
+            val layoutCount = parcel.readInt()
+            require(layoutCount in 0..10000) { "SavedState 条目数量非法" }
+            val layouts = ArrayList<Int>(layoutCount)
+            repeat(layoutCount) { layouts += parcel.readInt() }
+            skeletonItemLayouts = layouts
+            val countsSize = parcel.readInt()
+            require(countsSize == layoutCount) { "SavedState 条目布局与条数不匹配" }
+            val counts = ArrayList<Int>(countsSize)
+            repeat(countsSize) { counts += parcel.readInt() }
+            skeletonItemCounts = counts
+            // 4. 状态描述。
+            val descriptionCount = parcel.readInt()
+            require(descriptionCount in 0..StateLayoutState.entries.size) { "SavedState 描述数量非法" }
+            repeat(descriptionCount) {
+                val target = StateLayoutState.entries.getOrElse(parcel.readInt()) { StateLayoutState.CONTENT }
+                parcel.readString()?.let { descriptions[target] = it }
             }
+            // 5. 重试配置快照。
+            val emptyCount = parcel.readInt()
+            require(emptyCount in 0..StateRetryConfig.MAX_RETRY_IDS) { "SavedState EMPTY 重试数量非法" }
+            val emptyIds = ArrayList<Int>(emptyCount)
+            repeat(emptyCount) { emptyIds += parcel.readInt() }
+            require(emptyIds.all { it != 0 && it != View.NO_ID }) { "SavedState EMPTY 重试 ID 非法" }
+            emptyRetryViewIds = emptyIds.distinct()
+            val errorCount = parcel.readInt()
+            require(errorCount in 0..StateRetryConfig.MAX_RETRY_IDS) { "SavedState ERROR 重试数量非法" }
+            val errorIds = ArrayList<Int>(errorCount)
+            repeat(errorCount) { errorIds += parcel.readInt() }
+            require(errorIds.all { it != 0 && it != View.NO_ID }) { "SavedState ERROR 重试 ID 非法" }
+            errorRetryViewIds = errorIds.distinct()
+            retryThrottle = parcel.readLong()
+            retryEnabled = parcel.readInt() == 1
         }
 
         override fun writeToParcel(out: Parcel, flags: Int) {
@@ -1581,13 +1637,19 @@ class StateSkeletonLayout @JvmOverloads constructor(
             }
             out.writeInt(FORMAT_MARKER)
             out.writeInt(version)
+            // 1. 请求状态与状态布局资源。
             out.writeInt(requestedOrdinal)
+            out.writeInt(emptyResource)
+            out.writeInt(errorResource)
+            out.writeInt(loadingResource)
+            // 2. Loading 时序、过渡效果与状态播报策略。
             out.writeInt(if (useSkeletonFlag) 1 else 0)
+            out.writeLong(showDelay)
+            out.writeLong(minDuration)
             out.writeInt(transitionOrdinal)
             out.writeLong(transitionDuration)
             out.writeInt(if (announce) 1 else 0)
-            out.writeLong(showDelay)
-            out.writeLong(minDuration)
+            // 3. 骨架配置、节点规则及条目拼装声明。
             out.writeInt(skeletonSourceOrdinal)
             out.writeInt(skeletonTemplateResId)
             out.writeInt(skeletonEffectOrdinal)
@@ -1600,12 +1662,6 @@ class StateSkeletonLayout @JvmOverloads constructor(
             out.writeFloat(pulseMin)
             out.writeFloat(pulseMax)
             out.writeLong(maximumPixels)
-            out.writeInt(emptyResource)
-            out.writeInt(errorResource)
-            out.writeInt(loadingResource)
-            out.writeInt(retryViewId)
-            out.writeLong(retryThrottle)
-            out.writeInt(if (retryEnabled) 1 else 0)
             out.writeInt(nodeRules.size)
             nodeRules.forEach { (id, rule) ->
                 out.writeInt(id)
@@ -1614,12 +1670,20 @@ class StateSkeletonLayout @JvmOverloads constructor(
                 out.writeInt(if (rule.cornerRadius != null) 1 else 0)
                 rule.cornerRadius?.let { out.writeFloat(it) }
             }
-            out.writeInt(descriptions.size)
-            descriptions.forEach { (target, text) -> out.writeInt(target.ordinal); out.writeString(text) }
             out.writeInt(skeletonItemLayouts.size)
             skeletonItemLayouts.forEach { out.writeInt(it) }
             out.writeInt(skeletonItemCounts.size)
             skeletonItemCounts.forEach { out.writeInt(it) }
+            // 4. 状态描述。
+            out.writeInt(descriptions.size)
+            descriptions.forEach { (target, text) -> out.writeInt(target.ordinal); out.writeString(text) }
+            // 5. 重试配置快照。
+            out.writeInt(emptyRetryViewIds.size)
+            emptyRetryViewIds.forEach { out.writeInt(it) }
+            out.writeInt(errorRetryViewIds.size)
+            errorRetryViewIds.forEach { out.writeInt(it) }
+            out.writeLong(retryThrottle)
+            out.writeInt(if (retryEnabled) 1 else 0)
         }
 
         companion object CREATOR : Parcelable.Creator<SavedState> {
@@ -1629,10 +1693,9 @@ class StateSkeletonLayout @JvmOverloads constructor(
              * 当前 Parcel 写入布局对应的版本号。
              *
              * `formatVersion` 字段与 [writeToParcel] 的写入布局必须同步演进：
-             * 新增可保存字段时，把它 +1 并加进 `version >= N` 的读取分支。
-             * 写入前会断言字段等于本值，避免字段改了而写入布局没改。
+             * 本方案只处理当前格式，不保留历史读取分支；标记或版本不匹配明确拒绝。
              */
-            internal const val CURRENT_FORMAT_VERSION = 3
+            internal const val CURRENT_FORMAT_VERSION = 4
             override fun createFromParcel(parcel: Parcel): SavedState = SavedState(parcel)
 
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
@@ -1707,9 +1770,11 @@ class StateSkeletonLayout @JvmOverloads constructor(
     }
 
     private fun releaseStateView(state: StateLayoutState, view: View) {
-        // 按绑定当时记录的 ID / 根节点解绑，不读当前的 errorRetryViewId。
-        // 释放的可能是「旧 ID 时代」创建的缓存，读当前值会查错按钮甚至查不到。
-        if (state == StateLayoutState.ERROR) unbindRetry(view)
+        // EMPTY / ERROR 均转交控制器，按实际根与实际目标解绑；不读当前 ID 列表。
+        // 释放的可能是旧列表时代创建的缓存，读当前值会查错按钮甚至查不到。
+        if (state == StateLayoutState.EMPTY || state == StateLayoutState.ERROR) {
+            retryController.unbindRoot(view)
+        }
         withBindingCallback { onStateViewReleasedListener?.onStateViewReleased(this, state, view) }
     }
 
@@ -1727,7 +1792,8 @@ class StateSkeletonLayout @JvmOverloads constructor(
 
     private fun checkMainThread(method: String) {
         check(Looper.getMainLooper().isCurrentThread) { "StateSkeletonLayout.$method 必须在主线程调用" }
-        check(!bindingCallback || method.startsWith("setOn") || method == "getStateView" || method == "diagnostics") {
+        check(!bindingCallback || method.startsWith("setOn") || method == "getStateView" ||
+            method == "diagnostics" || method == "getRetryViewIds") {
             "状态页创建 / 释放回调中不得调用 $method，避免事务重入"
         }
     }

@@ -130,7 +130,7 @@ class BuiltInStateDemoFragmentTest {
         retry.performClick()
         frame()
         assertEquals(activity.getString(R.string.demo_builtin_retry_count, 1), retryCount)
-        assertTrue("未记录重试事件：$logText", logText.contains("收到内置重试按钮事件"))
+        assertTrue("未记录重试事件：$logText", logText.contains("收到内置重试事件"))
     }
 
     @Test fun `替换内置错误页文案后 findById 仍可再次定位`() {

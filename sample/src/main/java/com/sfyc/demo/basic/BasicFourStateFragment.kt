@@ -39,10 +39,10 @@ class BasicFourStateFragment : Fragment() {
         state.setOnRenderedStateChangedListener { _, old, new, _ ->
             log?.add("呈现：$old → $new")
         }
-        state.setOnRetryClickListener {
+        state.setOnRetryListener { _, retryState, clicked ->
             retryCount++
             binding.demoRetryCount.text = getString(R.string.demo_retry_count, retryCount)
-            log?.add("重试点击（状态保持 ERROR，由页面决定下一步）")
+            log?.add("重试点击 state=$retryState view=${clicked.id}（状态保持，由页面决定下一步）")
         }
         binding.demoBtnLoading.setOnClickListener { state.showLoading() }
         binding.demoBtnContent.setOnClickListener { state.showContent() }

@@ -5,7 +5,7 @@
 A 2-in-1 Android View widget combining page state management (Content / Loading / Empty / Error) and skeleton loading (Solid / Shimmer / Pulse). Pages only submit target states declaratively without directly coordinating state view visibility, skeleton animations, minimum display durations, or animation lifecycles.
 
 - Library module: `:stateskeletonlayout` (namespace `com.sfyc.ssl`)
-- Sample application: `:sample` (source package `com.sfyc.demo`, namespace / applicationId `com.sfyc.demo.ssl`, 20 demo screens)
+- Sample application: `:sample` (source package `com.sfyc.demo`, namespace / applicationId `com.sfyc.demo.ssl`, 23 demo screens)
 - UI: Android View System + XML + ViewBinding; Jetpack Compose is not introduced
 - Environment: Kotlin 2.2.10, AGP 8.13.2, Gradle 8.14, `compileSdk` / `targetSdk` 36, `minSdk` 26, JVM 17
 - Library explicit dependencies: AndroidX Annotation only (no Core, Lottie, SVGA, Material, Navigation, or Lifecycle); Kotlin standard library is added automatically by the Kotlin plugin
@@ -16,7 +16,7 @@ Callers of the original module and legacy package need to update dependencies, i
 
 ## Installation
 
-### JitPack (0.0.3)
+### JitPack (0.0.4)
 
 This project publishes the library module's Release AAR, source jar, and API documentation jar via JitPack. The sample app is not included in the published artifacts.
 Add the repository in the host project's `settings.gradle.kts`:
@@ -39,12 +39,24 @@ Then add the dependency in the app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.3")
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.4")
 }
 ```
 
-See the [JitPack Project Page](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.3) for build status and logs.
+See the [JitPack Project Page](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.4) for build status and logs.
 JitPack builds artifacts on the first request for a version; dependencies can only be resolved after the build succeeds.
+
+`0.0.4` unifies multiple retry targets for EMPTY / ERROR and includes breaking API changes. When upgrading from `0.0.3` or earlier, migrate the following entry points:
+
+| Previous API | `0.0.4` API |
+| --- | --- |
+| `errorRetryViewId` | `setRetryViewIds(StateLayoutState.ERROR, ...)` |
+| `SslLayoutOptions.errorRetryViewId` | `SslLayoutOptions.retryConfig` |
+| XML `ssl_errorRetryViewId` | `ssl_errorRetryViewIds`, referencing an `<array>` of one or more View IDs |
+| `setOnRetryClickListener` | `setOnRetryListener { layout, state, clickedView -> ... }` |
+
+The previous entry points have been removed. Recompile the app and any libraries using this library's public types. View state restoration supports the current version only; SavedState from earlier versions is not read.
+See the [changelog](CHANGELOG.md) for item-assembled skeleton templates and all release changes.
 
 When upgrading from `0.0.1`, recompile the app and any libraries that use `SslGlobalDefaults` or `StateLayoutDiagnostics`.
 New fields in these public data classes change their JVM constructor and `copy` signatures; precompiled AARs may require updated builds. See the [changelog](CHANGELOG.md).
@@ -63,6 +75,24 @@ dependencies {
 
 ### 1. Minimal XML
 
+Declare the retry targets in `res/values/arrays.xml`:
+
+```xml
+<resources>
+    <array name="page_empty_retry_ids">
+        <item>@id/ivEmpty</item>
+        <item>@id/tvEmpty</item>
+    </array>
+    <array name="page_error_retry_ids">
+        <item>@id/ivError</item>
+        <item>@id/btnErrorRetry</item>
+    </array>
+    <array name="page_no_retry_ids" />
+</resources>
+```
+
+Reference the arrays in the screen layout:
+
 ```xml
 <com.sfyc.ssl.StateSkeletonLayout
     android:id="@+id/state_layout"
@@ -70,7 +100,8 @@ dependencies {
     android:layout_height="match_parent"
     app:ssl_emptyLayout="@layout/state_empty"
     app:ssl_errorLayout="@layout/state_error"
-    app:ssl_errorRetryViewId="@id/retry_button"
+    app:ssl_emptyRetryViewIds="@array/page_empty_retry_ids"
+    app:ssl_errorRetryViewIds="@array/page_error_retry_ids"
     app:ssl_useSkeleton="true"
     app:ssl_skeletonSource="content"
     app:ssl_skeletonEffect="shimmer">
@@ -81,19 +112,27 @@ dependencies {
 </com.sfyc.ssl.StateSkeletonLayout>
 ```
 
+To close a state, reference an empty array: `app:ssl_emptyRetryViewIds="@array/page_no_retry_ids"`.
+Undeclared means inherit; `@null`, `0`, or strings are not empty-list contracts.
+
 ### 2. Switching State in Fragment / ViewBinding
 
 ```kotlin
 class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val stateLayout = binding.stateLayout
-        // Error retry: one-way event; the widget does not switch state or send network requests automatically.
-        stateLayout.setOnRetryClickListener {
-            viewModel.onRetryClicked()
+        // Unified retry callback: one-way event; the widget does not switch state or send requests.
+        stateLayout.setOnRetryListener { layout, state, clickedView ->
+            viewModel.onRetryClicked(state)
         }
         viewModel.uiState.observe(viewLifecycleOwner) { ui ->
             stateLayout.render(ui.toLayoutState())
         }
+    }
+
+    override fun onDestroyView() {
+        binding.stateLayout.setOnRetryListener(null)
+        super.onDestroyView()
     }
 }
 ```
@@ -133,9 +172,11 @@ layout.setStateViewLayout(StateLayoutState.ERROR, R.layout.state_error)
 Programmatically created instances can use the same retry mechanism as in XML, with the default throttle interval remaining at 500 ms:
 
 ```kotlin
-layout.errorRetryViewId = R.id.retry_button
+layout.setRetryViewIds(StateLayoutState.EMPTY, R.id.ivEmpty, R.id.tvEmpty)
+layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ivError, R.id.btnErrorRetry)
+// No IDs means explicitly closing that state.
 layout.retryClickThrottleMillis = 500L
-layout.setOnRetryClickListener { viewModel.onRetryClicked() }
+layout.setOnRetryListener { _, state, _ -> viewModel.onRetryClicked(state) }
 // Explicitly controlled by business logic during requests; the widget does not infer network status or modify button enabled state.
 layout.retryClicksEnabled = !uiState.isRetrying
 ```
@@ -159,9 +200,10 @@ integration only needs the business content itself:
 </com.sfyc.ssl.StateSkeletonLayout>
 ```
 
-The built-in error page ships with a retry button. When `ssl_errorRetryViewId` is not set explicitly,
-the widget adopts that button as the unified retry entry point — no extra configuration needed. The
-built-in layout's IDs are public, so you can replace the text:
+The built-in error page ships with a retry button. When retry IDs are not set explicitly,
+the widget adopts that button as the default error entry automatically — no extra configuration needed.
+EMPTY is closed by default. Explicit lists do not append the built-in button; an explicit empty list
+closes it. The built-in layout's IDs are public, so you can replace the text:
 
 ```kotlin
 // IDs of the library's built-in layout (declared in the library's ids.xml, referenceable directly).
@@ -231,7 +273,8 @@ StateSkeletonLayoutDefaults.install(
 - **Partial Override**: Fields set to `null` in `SslGlobalDefaults` do not participate in overriding and retain the next-layer default value.
 - **Monolithic Replacement by install**: Repeated calls take the latest invocation; no field-level merging is performed.
 - **Effective Timing**: Merged only once during widget construction; already created instances are unaffected by subsequent `install` calls.
-- **Layout Resource Properties Are Not Overridden** (`emptyLayout` / `errorLayout` / `loadingLayout` / `skeletonTemplate` / `errorRetryViewId`): These properties vary per screen and remain individually configured via XML or at runtime.
+- **Layout Resource Properties Are Not Overridden** (`emptyLayout` / `errorLayout` / `loadingLayout` / `skeletonTemplate`): These properties vary per screen and remain individually configured via XML or at runtime.
+  Retry entries participate via `SslGlobalDefaults.retryConfig`, merged per state.
 
 ### Optional: Theme Attribute Helper Layer
 
@@ -249,10 +292,20 @@ StateSkeletonLayoutDefaults.install(
 ### Priority Chain (Low → High)
 
 ```
-Built-in Resources / Constants < Theme Defaults < Global Config < XML Explicit Style < XML Direct Attributes < Runtime Setters
+Library defaults < Theme default style < Global Config < XML explicit style (incl. parent) < XML direct attributes < Runtime setters / SavedState restore
 ```
 
 When the same property is set in both Theme and Global Config, **Global Config takes precedence**. The parent style of an explicit style also belongs to the page layer; `?attr` references within it are still resolved against the active Theme.
+
+Retry entries merge per state as whole-list replacement, never union:
+
+| Higher-priority state list | Lower-priority state list | Result |
+| --- | --- | --- |
+| `null` | `[A, B]` | `[A, B]` (inherit) |
+| `[]` | `[A, B]` | `[]` (closed, truncates inheritance) |
+| `[C]` | `[A, B]` | `[C]` (replace) |
+
+Library defaults: EMPTY is empty; ERROR is `[ssl_builtin_state_retry]` with the built-in error layout, otherwise empty.
 
 ### Test Isolation
 
@@ -586,7 +639,8 @@ Priority: Built-in < Theme Defaults < Global Config < XML Explicit Style < XML D
 | `ssl_minLoadingDuration` | integer (ms) | `300` | Must not be negative |
 | `ssl_transitionEffect` | `none`, `crossfade` | `crossfade` | Treated as `none` when system animations are disabled |
 | `ssl_transitionDuration` | integer (ms) | `180` | Must not be negative |
-| `ssl_errorRetryViewId` | reference | None | Points to internal View in error layout; warns if not found |
+| `ssl_emptyRetryViewIds` | reference (`<array>` of `@id/...`) | None (inherit) | Empty array closes explicitly; missing IDs warn and skip |
+| `ssl_errorRetryViewIds` | reference (`<array>` of `@id/...`) | None (inherit) | Empty array closes explicitly; missing IDs warn and skip |
 | `ssl_announceStateChanges` | boolean | `true` | Announces once when entering Loading/Empty/Error |
 
 A default style `@style/ssl_StateSkeletonLayout` (consistent with the defaults above) is also provided to reduce repetitive declarations. Note: The `declare-styleable` is named `SslStateSkeletonLayout` (due to `resourcePrefix` requiring the `ssl_` prefix on library resources), while attribute names at XML call sites remain unchanged.
@@ -622,10 +676,11 @@ fun render(state: StateLayoutState)       // Sole state entry point (Main Thread
 fun showLoading() / showContent() / showEmpty() / showError()  // All delegate to render
 fun invalidateSkeleton()                  // Manually refresh mask (Main Thread)
 fun setStateViewLayout(state, layoutResId) // Change state layout (CONTENT not supported)
-var errorRetryViewId: Int
-var retryClickThrottleMillis: Long       // Default 500ms, can be 0
+fun setRetryViewIds(state, vararg viewIds) // Replace the full list for a state; no IDs closes it; EMPTY / ERROR only
+fun getRetryViewIds(state): List<Int> // Immutable snapshot of the effective config; readable in creation callbacks
+var retryClickThrottleMillis: Long       // Default 500ms, can be 0; shared per instance + state
 var retryClicksEnabled: Boolean
-fun setOnRetryClickListener(listener)     // One-way retry event
+fun setOnRetryListener(listener: OnRetryListener?) // Unified callback onRetry(layout, state, clickedView)
 fun setOnStateViewCreatedListener(listener)
 fun setOnRenderedStateChangedListener(listener)
 fun setOnLoadingVisibilityChangedListener(listener)
@@ -733,7 +788,7 @@ StateSkeletonLayout/                    # Workspace directory retained; Gradle r
 │  ├─ src/test/                        # JVM: timing + config + default consistency + SavedState round-trip + screenshot regression
 │  ├─ src/test/screenshots/            # Roborazzi screenshot baselines (must be committed)
 │  └─ src/androidTest/                 # Device: Switching/touch/accessibility/detach restoration
-└─ sample/                              # :sample (20 demo screens, source package com.sfyc.demo)
+└─ sample/                              # :sample (23 demo screens, source package com.sfyc.demo)
 ```
 
 ```powershell
@@ -774,7 +829,7 @@ Module and package name migration verification round (2026-10-01):
 - Both modules assembled Debug / Release and AndroidTest APKs successfully; sample Release completed R8 shrinking; standard Release APK remains unsigned.
 - Public AAR classes, ViewBinding, six Epoxy generated models, and sample / test Manifests were verified with new package names.
 - Device tests were attempted and reported `No online devices found` due to unauthorized ADB or unavailable emulators, and were not executed.
-  There were 15 demo screens at that point (later 16, currently 20); rotation recovery, R8 Release startup, etc., still require device follow-up.
+  There were 15 demo screens at that point (later 16, currently 23); rotation recovery, R8 Release startup, etc., still require device follow-up.
 
 Historical records below represent pre-migration states; legacy task names and artifact paths are retained as-is and do not serve as proof for the current verification round.
 
@@ -850,7 +905,7 @@ rules yourself:
 ### Release Steps
 
 The version number is centrally maintained in `gradle.properties` under `libraryVersion`; both library POM and sample app read the same value.
-Current version is `0.0.3`, and Git tags also use `0.0.3` (without `v` prefix).
+Current version is `0.0.4`, and Git tags also use `0.0.4` (without `v` prefix).
 
 1. After updating the version, run library and sample tests, Lint, Release builds, and verify local Maven publication:
 
@@ -858,12 +913,12 @@ Current version is `0.0.3`, and Git tags also use `0.0.3` (without `v` prefix).
    .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:verifyRoborazziDebug :stateskeletonlayout:apiCheck :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
    ```
 
-2. Commit and push source code, then create and push a version tag matching `libraryVersion`:
+2. Commit and push source code. Wait for GitHub Actions to pass for that commit, then create and push a version tag matching `libraryVersion`:
 
    ```powershell
    git push origin main
-   git tag -a 0.0.3 -m "Release 0.0.3"
-   git push origin 0.0.3
+   git tag -a 0.0.4 -m "Release 0.0.4"
+   git push origin 0.0.4
    ```
 
 3. Request a build on the JitPack project page and inspect its status and logs. Once it succeeds, verify the POM, AAR, source jar, and API documentation jar, then verify dependency resolution and builds in a consumer project before creating the GitHub Release for the tag.

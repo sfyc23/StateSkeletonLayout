@@ -7,7 +7,7 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 最短展示时间与动画生命周期。
 
 - 库模块：`:stateskeletonlayout`（命名空间 `com.sfyc.ssl`）
-- 示例应用：`:sample`（源码包 `com.sfyc.demo`，namespace / applicationId `com.sfyc.demo.ssl`，20 个演示页）
+- 示例应用：`:sample`（源码包 `com.sfyc.demo`，namespace / applicationId `com.sfyc.demo.ssl`，23 个演示页）
 - UI：Android View System + XML + ViewBinding，不引入 Jetpack Compose
 - 环境：Kotlin 2.2.10、AGP 8.13.2、Gradle 8.14、`compileSdk` / `targetSdk` 36、
   `minSdk` 26、JVM 17
@@ -19,7 +19,7 @@ Android View 控件。页面只提交目标状态，不直接协调状态页可�
 
 ## 接入方式
 
-### JitPack（0.0.3）
+### JitPack（0.0.4）
 
 本工程通过 JitPack 发布库模块的 Release AAR、源码包和 API 文档包，示例应用不进入发布制品。
 在宿主工程的 `settings.gradle.kts` 中加入仓库：
@@ -42,12 +42,24 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.3")
+    implementation("com.github.sfyc23:StateSkeletonLayout:0.0.4")
 }
 ```
 
-构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.3)。
+构建状态与日志见 [JitPack 项目页面](https://jitpack.io/#sfyc23/StateSkeletonLayout/0.0.4)。
 首次请求该版本时 JitPack 会构建制品，只有构建成功后才能解析依赖。
+
+`0.0.4` 统一了 EMPTY / ERROR 的多重试入口，包含不兼容的 API 调整。从 `0.0.3` 及更早版本升级时，按下表迁移：
+
+| 旧入口 | `0.0.4` 入口 |
+| --- | --- |
+| `errorRetryViewId` | `setRetryViewIds(StateLayoutState.ERROR, ...)` |
+| `SslLayoutOptions.errorRetryViewId` | `SslLayoutOptions.retryConfig` |
+| XML `ssl_errorRetryViewId` | `ssl_errorRetryViewIds`，引用包含一个或多个 View ID 的 `<array>` |
+| `setOnRetryClickListener` | `setOnRetryListener { layout, state, clickedView -> ... }` |
+
+旧入口已移除。升级后需重新编译应用及使用本库公开类型的依赖库；只支持当前版本的 View 状态恢复，不读取旧版本的 SavedState。
+新增的条目拼装模板和完整变更见 [修改日志](CHANGELOG.md)。
 
 从 `0.0.1` 升级时，需要重新编译应用及使用 `SslGlobalDefaults` / `StateLayoutDiagnostics` 的依赖库。
 这两个公开数据类新增字段，旧 AAR 中对构造函数或 `copy` 的调用可能不再匹配；详见 [修改日志](CHANGELOG.md)。
@@ -66,6 +78,24 @@ dependencies {
 
 ### 1. 最小 XML
 
+先在 `res/values/arrays.xml` 中声明重试入口：
+
+```xml
+<resources>
+    <array name="page_empty_retry_ids">
+        <item>@id/ivEmpty</item>
+        <item>@id/tvEmpty</item>
+    </array>
+    <array name="page_error_retry_ids">
+        <item>@id/ivError</item>
+        <item>@id/btnErrorRetry</item>
+    </array>
+    <array name="page_no_retry_ids" />
+</resources>
+```
+
+在页面布局中引用数组：
+
 ```xml
 <com.sfyc.ssl.StateSkeletonLayout
     android:id="@+id/state_layout"
@@ -73,7 +103,8 @@ dependencies {
     android:layout_height="match_parent"
     app:ssl_emptyLayout="@layout/state_empty"
     app:ssl_errorLayout="@layout/state_error"
-    app:ssl_errorRetryViewId="@id/retry_button"
+    app:ssl_emptyRetryViewIds="@array/page_empty_retry_ids"
+    app:ssl_errorRetryViewIds="@array/page_error_retry_ids"
     app:ssl_useSkeleton="true"
     app:ssl_skeletonSource="content"
     app:ssl_skeletonEffect="shimmer">
@@ -84,19 +115,28 @@ dependencies {
 </com.sfyc.ssl.StateSkeletonLayout>
 ```
 
+关闭某个状态只承诺空数组写法：`app:ssl_emptyRetryViewIds="@array/page_no_retry_ids"`。
+未声明表示继承；`@null`、数字 `0` 或字符串不作为空列表契约。
+
 ### 2. Fragment / ViewBinding 中切换状态
 
 ```kotlin
 class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val stateLayout = binding.stateLayout
-        // 错误页重试：单向事件，控件不自动切状态、不发网络请求。
-        stateLayout.setOnRetryClickListener {
-            viewModel.onRetryClicked()
+        // 重试统一回调：单向事件，控件不自动切状态、不发网络请求。
+        // state 为接受事件时的 EMPTY / ERROR，clickedView 为实际点击的图片、文字或按钮。
+        stateLayout.setOnRetryListener { layout, state, clickedView ->
+            viewModel.onRetryClicked(state)
         }
         viewModel.uiState.observe(viewLifecycleOwner) { ui ->
             stateLayout.render(ui.toLayoutState())
         }
+    }
+
+    override fun onDestroyView() {
+        binding.stateLayout.setOnRetryListener(null)
+        super.onDestroyView()
     }
 }
 ```
@@ -132,7 +172,10 @@ layout.applyOptions(
     SslLayoutOptions(
         emptyLayoutResId = R.layout.state_empty,
         errorLayoutResId = R.layout.state_error,
-        errorRetryViewId = R.id.retry_button,
+        retryConfig = StateRetryConfig(
+            emptyViewIds = listOf(R.id.ivEmpty, R.id.tvEmpty),
+            errorViewIds = listOf(R.id.ivError, R.id.btnErrorRetry),
+        ),
         useSkeleton = true,
         skeletonConfig = SkeletonConfig(effect = SkeletonEffect.PULSE),
     )
@@ -157,9 +200,12 @@ layout.setStateViewLayout(StateLayoutState.ERROR, R.layout.state_error)
 程序化创建可使用与 XML 相同的重试入口，默认节流间隔仍为 500 ms：
 
 ```kotlin
-layout.errorRetryViewId = R.id.retry_button
+layout.setRetryViewIds(StateLayoutState.EMPTY, R.id.ivEmpty, R.id.tvEmpty)
+layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ivError, R.id.btnErrorRetry)
+// 无 ID 表示显式关闭该状态：layout.setRetryViewIds(StateLayoutState.EMPTY)
+layout.getRetryViewIds(StateLayoutState.ERROR) // 最终有效配置的不可修改快照
 layout.retryClickThrottleMillis = 500L
-layout.setOnRetryClickListener { viewModel.onRetryClicked() }
+layout.setOnRetryListener { _, state, clickedView -> viewModel.onRetryClicked(state) }
 // 请求期间由业务明确控制；控件不推断网络状态，也不修改按钮 enabled。
 layout.retryClicksEnabled = !uiState.isRetrying
 ```
@@ -182,8 +228,8 @@ layout.retryClicksEnabled = !uiState.isRetrying
 </com.sfyc.ssl.StateSkeletonLayout>
 ```
 
-内置错误页自带重试按钮，未显式设置 `ssl_errorRetryViewId` 时控件会自动接管它作为统一重试入口，
-无需额外配置。内置布局的固定 ID 是公开的，可用来替换文案：
+内置错误页自带重试按钮，未显式配置重试入口时控件按统一默认列表机制自动接管它作为错误态默认入口，
+无需额外配置。EMPTY 默认关闭。显式列表不自动追加内置按钮；显式空列表可关闭内置按钮。内置布局的固定 ID 是公开的，可用来替换文案：
 
 ```kotlin
 // 库内置布局的 ID（声明在库的 ids.xml 中，可直接引用）。
@@ -251,7 +297,8 @@ StateSkeletonLayoutDefaults.install(
 - **install 整体替换**：重复调用以最后一次为准，不做字段级合并。
 - **生效时机**：仅在控件构造时合并一次；已创建实例不受后续 `install` 影响。
 - **不覆盖布局资源类属性**（`emptyLayout` / `errorLayout` / `loadingLayout` /
-  `skeletonTemplate` / `errorRetryViewId`），这些属性页面各异，仍由 XML / 运行时单独配置。
+  `skeletonTemplate`），这些属性页面各异，仍由 XML / 运行时单独配置。
+  重试入口通过 `SslGlobalDefaults.retryConfig` 按状态参与默认值合并。
 
 ### 可选：Theme Attribute 辅助层
 
@@ -269,10 +316,33 @@ StateSkeletonLayoutDefaults.install(
 ### 优先级链（低 → 高）
 
 ```
-库内置资源 / 常量 < Theme 默认 < Global Config < XML 显式 style < XML 直接属性 < 运行时 setter
+库默认 < Theme 默认 style < Global Config < XML 显式 style（含父 style） < XML 直接属性 < 运行时 setter / SavedState 恢复
 ```
 
 同一属性在 Theme 与 Global 同时设置时，**Global 优先**。显式 style 的父样式也属于页面层；其中的 `?attr` 引用仍按真实 Theme 解析。
+
+重试入口按状态独立合并，整份列表替换，不做并集：
+
+| 高优先级状态列表 | 低优先级状态列表 | 最终结果 |
+| --- | --- | --- |
+| `null` | `[A, B]` | `[A, B]`（继承） |
+| `[]` | `[A, B]` | `[]`（关闭，截断继承） |
+| `[C]` | `[A, B]` | `[C]`（替换） |
+
+库默认：EMPTY 为空；ERROR 在使用库内置错误布局时为 `[ssl_builtin_state_retry]`，使用宿主错误布局时为空。
+全局安装示例：
+
+```kotlin
+StateSkeletonLayoutDefaults.install(
+    SslGlobalDefaults(
+        useBuiltInStateLayouts = false,
+        retryConfig = StateRetryConfig(
+            emptyViewIds = listOf(R.id.ivEmpty, R.id.tvEmpty),
+            errorViewIds = listOf(R.id.ivError, R.id.btnErrorRetry),
+        ),
+    ),
+)
+```
 
 ### 测试隔离
 
@@ -607,7 +677,8 @@ Loading 一旦真正上屏至少保留该时长（等待首次布局的时间不
 | `ssl_minLoadingDuration` | integer（毫秒） | `300` | 不得小于 0 |
 | `ssl_transitionEffect` | `none`、`crossfade` | `crossfade` | 系统动画关闭时按 `none` 处理 |
 | `ssl_transitionDuration` | integer（毫秒） | `180` | 不得小于 0 |
-| `ssl_errorRetryViewId` | reference | 无 | 指向错误布局内部 View；找不到只打警告 |
+| `ssl_emptyRetryViewIds` | reference（`<array>`，条目为 `@id/...`） | 无（继承） | 空数组显式关闭；找不到的 ID 只打警告并跳过 |
+| `ssl_errorRetryViewIds` | reference（`<array>`，条目为 `@id/...`） | 无（继承） | 空数组显式关闭；找不到的 ID 只打警告并跳过 |
 | `ssl_announceStateChanges` | boolean | `true` | 进入 Loading/Empty/Error 时播报一次 |
 
 另提供默认样式 `@style/ssl_StateSkeletonLayout`（与上表默认值一致），
@@ -646,10 +717,11 @@ fun render(state: StateLayoutState)       // 唯一状态入口（主线程）
 fun showLoading() / showContent() / showEmpty() / showError()  // 均委托 render
 fun invalidateSkeleton()                  // 主动刷新遮罩（主线程）
 fun setStateViewLayout(state, layoutResId) // 更换状态布局（CONTENT 不支持）
-var errorRetryViewId: Int
-var retryClickThrottleMillis: Long       // 默认 500ms，可设 0
+fun setRetryViewIds(state, vararg viewIds) // 替换指定状态的完整列表；无 ID 显式关闭；只支持 EMPTY / ERROR
+fun getRetryViewIds(state): List<Int> // 最终有效配置的不可修改快照；回调内可读
+var retryClickThrottleMillis: Long       // 默认 500ms，可设 0；同实例同状态共享窗口
 var retryClicksEnabled: Boolean
-fun setOnRetryClickListener(listener)     // 重试单向事件
+fun setOnRetryListener(listener: OnRetryListener?) // 统一回调 onRetry(layout, state, clickedView)
 fun setOnStateViewCreatedListener(listener)
 fun setOnRenderedStateChangedListener(listener)
 fun setOnLoadingVisibilityChangedListener(listener)
@@ -769,7 +841,7 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 │  ├─ src/test/                        # JVM：时序 + 配置 + 默认值一致性 + SavedState 往返 + 截图回归
 │  ├─ src/test/screenshots/            # Roborazzi 截图基线（需入库）
 │  └─ src/androidTest/                 # 真机：切换/触摸/无障碍/detach 恢复
-└─ sample/                              # :sample（20 个示例页，源码包 com.sfyc.demo）
+└─ sample/                              # :sample（23 个示例页，源码包 com.sfyc.demo）
 ```
 
 ```powershell
@@ -810,7 +882,7 @@ StateSkeletonLayout/                    # 工作区目录保留；Gradle 根工�
 - 两模块 Debug / Release、两模块 AndroidTest APK 均组装通过；示例 Release 完成 R8 压缩，标准 Release APK 仍未签名。
 - AAR 公开类、ViewBinding、六类 Epoxy 生成模型及示例 / 测试 Manifest 的新包名已核对。
 - 设备测试已尝试，因真机 ADB 未授权、模拟器不可用而报告 `No online devices found`，未实际执行。
-  当时为 15 个示例页（后增至 16 个，当前为 20 个）；旋转恢复、R8 Release 启动等仍需设备补验。
+  当时为 15 个示例页（后增至 16 个，当前为 23 个）；旋转恢复、R8 Release 启动等仍需设备补验。
 
 以下历史记录属于迁移前状态，旧任务名与旧产物路径按原样保留，不作为本轮验证证据。
 
@@ -898,7 +970,7 @@ AGP 无法推断引用关系，需要自行加规则：
 ### 发布流程
 
 版本号在根目录 `gradle.properties` 的 `libraryVersion` 中统一维护，库 POM 与示例应用读取同一值。
-当前版本为 `0.0.3`，Git 标签也使用 `0.0.3`（不加 `v` 前缀）。
+当前版本为 `0.0.4`，Git 标签也使用 `0.0.4`（不加 `v` 前缀）。
 
 发布坐标同样集中在 `gradle.properties`：`libraryGroup`（`com.github.sfyc23`）、
 `libraryArtifactId`（`StateSkeletonLayout`）。示例的 `sampleVersionCode` 与 `libraryVersion`
@@ -914,12 +986,12 @@ AGP 无法推断引用关系，需要自行加规则：
    .\gradlew.bat :stateskeletonlayout:testDebugUnitTest :stateskeletonlayout:verifyRoborazziDebug :stateskeletonlayout:apiCheck :stateskeletonlayout:lintRelease :stateskeletonlayout:publishReleasePublicationToMavenLocal :sample:testDebugUnitTest :sample:lintRelease :sample:assembleRelease
    ```
 
-2. 提交并推送源码，然后创建并推送与 `libraryVersion` 相同的版本标签：
+2. 提交并推送源码，等待该提交的 GitHub Actions 验证通过后，再创建并推送与 `libraryVersion` 相同的版本标签：
 
    ```powershell
    git push origin main
-   git tag -a 0.0.3 -m "Release 0.0.3"
-   git push origin 0.0.3
+   git tag -a 0.0.4 -m "Release 0.0.4"
+   git push origin 0.0.4
    ```
 
 3. 在 JitPack 项目页面请求构建，检查状态和日志；成功后核对 POM、AAR、源码包与 API 文档包，并验证接入项目的依赖解析与构建，再创建对应标签的 GitHub Release。

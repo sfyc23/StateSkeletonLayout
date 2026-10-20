@@ -2,9 +2,63 @@
 
 记录库模块、示例应用和公开文档的变更。
 
-## Unreleased（条目拼装模板 T2）
+## 0.0.4（2026-10-20）
 
-### 库模块 `:stateskeletonlayout`
+本版本新增 EMPTY / ERROR 多重试入口和条目拼装模板 T2，包含 `0.0.3` 之后的示例改进。
+`libraryVersion` / 示例 `versionName` / Git 标签均为 `0.0.4`，示例 `versionCode` 为 `4`。
+
+### 升级说明
+
+- 本版本包含不兼容的 API 调整，不保留旧单 ID 入口或回调适配层。
+  `errorRetryViewId` 改为 `setRetryViewIds(StateLayoutState.ERROR, ...)`；
+  `SslLayoutOptions.errorRetryViewId` 改为 `retryConfig`；
+  XML `ssl_errorRetryViewId` 改为引用 ID 数组的 `ssl_errorRetryViewIds`；
+  `setOnRetryClickListener` 改为 `setOnRetryListener { layout, state, clickedView -> ... }`。
+- `SslGlobalDefaults`、`SslLayoutOptions` 等公开类型的 JVM 签名发生变化，应用和依赖本库的其他库均需重新编译。
+- SavedState 使用当前 v4 格式，只保证同版状态恢复，不读取历史格式。
+- README 中英文接入说明、迁移说明与版本链接同步更新；示例目录共 23 页。
+
+### 库模块 `:stateskeletonlayout`：多重试入口
+
+#### 新增公开 API
+
+- `StateRetryConfig(emptyViewIds, errorViewIds)`：不可变重试配置；`null` 不参与覆盖（继承／跳过），空列表显式关闭；构造复制、按首次出现顺序去重，属性返回不可修改快照；`0` / `View.NO_ID` 拒绝，单状态去重后上限 `10000`。
+- `OnRetryListener.onRetry(layout, state, clickedView)`：统一语义回调；`fun interface`，一次接受的点击只调用一次；库不自动切换状态、不发请求。
+- `StateSkeletonLayout.setRetryViewIds(state, vararg viewIds)` / `getRetryViewIds(state)`：按状态替换／读取完整列表；只接受 EMPTY / ERROR，无 ID 显式关闭；相同列表重复赋值为空操作；`getRetryViewIds` 允许在状态页创建回调中只读调用。
+- `SslGlobalDefaults.retryConfig`：全局默认重试入口，按状态参与合并。
+- `SslLayoutOptions.retryConfig`：实例批量重试配置，非 null 状态列表覆盖当前值，null 状态列表跳过；`isEmpty` 同步更新（对象为 null 或两列表都为 null 时空操作）。
+- XML 属性 `ssl_emptyRetryViewIds` / `ssl_errorRetryViewIds`（`format="reference"`，指向 `<array>`，条目为 `@id/...`）：空数组显式关闭，未声明继承；混入字符串、数值、颜色、布局或空条目抛出来自属性名与下标的异常。
+
+#### 行为变更（统一单入口，不保留旧适配层）
+
+- 移除 `StateSkeletonLayout.errorRetryViewId`、`SslLayoutOptions.errorRetryViewId`、XML 属性 `ssl_errorRetryViewId`（含 `XmlSslAttrs.errorRetryViewId`）、`SavedState.retryViewId`、旧 `setOnRetryClickListener` 及历史 SavedState 读取分支；所有调用方统一迁移到新模型，不提供别名或单元素投影。
+- 配置优先级按状态独立合并：`XML 直接属性 > XML 显式 style（含父 style） > Global > Theme 默认 style > 库默认`；整份列表替换，不做并集，高优先级空列表截断继承。库默认：EMPTY 为空；ERROR 在使用库内置错误布局时为 `[ssl_builtin_state_retry]`，宿主布局为空。
+- 绑定、节流与释放由新增 `internal/StateRetryController` 唯一管理：多根监听记录、按状态更新、事件门禁、共享节流与释放；`retryClicksEnabled` / `retryClickThrottleMillis` 委托控制器读写；`StateViewRegistry` 只负责创建、缓存与释放。
+- 点击门禁：非 null 回调、`retryClicksEnabled`、挂载可见、目标及父链可见可用、`renderedState == expected && requestedState == expected`、原始根仍为当前缓存、包装层仍为当前显示层、目标仍在原根下且属于有效记录、通过节流；同控件同状态共享窗口，EMPTY / ERROR 分别计时，不同实例互不阻塞；`0` 关闭时间节流但门禁仍有效；回调前记录已接受时间；相同配置重复应用、回调重设、候选失败不清窗口，明确改变该状态列表清零该状态窗口。
+- `SavedState` 格式升至 v4，只处理当前格式：标记或版本不匹配明确拒绝；按请求状态与布局资源、Loading 时序过渡播报、骨架节点条目、状态描述、重试快照（EMPTY／ERROR 列表、节流、可用开关）分组读写；重试快照保存最终配置，显式关闭写入数量 0；读取限 `0..10000` 并校验去重；所有校验完成后才修改实例或释放缓存；Listener／View／节流时间不保存。
+- `checkMainThread` 绑定回调白名单新增 `getRetryViewIds`（回调内可读、不可修改）。
+- 修复恢复前已创建状态页时重试监听未更新的问题：同版恢复会为保留的 EMPTY / ERROR 缓存根重新绑定最终列表，显式关闭会解绑旧入口。
+
+#### 测试
+
+- 新增 `StateRetryConfigTest`（不可变性、去重、三态语义、无效值）。
+- 新增 `StateRetryBindingTest`（多入口、缓存更新、候选失败、释放、门禁与节流）。
+- `SslAttributePriorityTest` 新增重试优先级用例（Global／Theme／XML／style 同字段，显式空列表关闭，错误类型与空条目异常；竞争列表使用不同 ID）。
+- `SslDefaultsMergerTest` 新增逐状态部分覆盖、显式空列表与 install 隔离。
+- `StateSkeletonLayoutSavedStateTest` 按当前格式全字段往返、多 ID、显式关闭与无效格式拒绝。
+- 新增恢复前已缓存状态页的回归测试，验证显式关闭解绑和多入口恢复后的实际点击派发。
+- `StateSkeletonLayoutViewTest`、`StateSkeletonLayoutRefinementsTest`、`StateSkeletonLayoutOptimizationTest` 使用新回调与列表入口验证事件、禁用、时序、缓存与替换；删除仅为历史格式保留的测试。
+- 新增 `stateskeletonlayout/src/debug` 夹具：`ssl_test_state_retry_multi.xml`、`ssl_test_host_retry_priority.xml`、`ssl_test_host_retry_style_only.xml`、`ssl_test_retry.xml`；`ssl_test_host_attrs.xml` 单入口改为单元素数组。
+
+### 示例应用 `:sample`：多重试入口
+
+- 新增「多重试入口」演示页（`retry/MultiRetryDemoFragment` + `fragment_multi_retry.xml`、`demo_state_empty_retry.xml`、`demo_state_error_retry.xml`、`arrays_retry.xml`，`DemoCatalog` 入口 +1）：全局安装一次、页面注册一次回调后所有默认热区可用；两个局部实例隔离、禁用、替换与回调计数；离开恢复 canonical。
+- 存量 8 处单 ID 声明统一替换为共享单元素数组引用；`fragment_builtin_state.xml` 清理已删除属性说明。
+- `BasicFourStateFragment`、`BuiltInStateDemoFragment`、`SvgaLoadingFragment`、`FeedDemoFragment`、`WorkSectionStateView` 统一注册／释放 `OnRetryListener`。
+- 中英文案新增 `demo_multi_*`；`demo_builtin_*` 同步新接口表述。
+- 新增 `MultiRetryDemoFragmentTest`（示例回调、实例隔离与恢复）。
+
+### 库模块 `:stateskeletonlayout`：条目拼装模板 T2
 
 #### 新增公开 API
 
@@ -27,21 +81,21 @@
   完整性在 XML 构造期严格校验、运行时渲染入口（`preflight`）兜底。
 - `SkeletonConfig(source=TEMPLATE)` 允许暂不带 `templateLayoutResId`（此前构造即抛异常）；
   缺模板的失败改由控件统一校验在构造 / 渲染时抛出，错误信息不变。
-- `SavedState` 格式升至 v3：新增条目布局与条数两份列表；binder 不可序列化，
+- 当前 SavedState v4 格式包含条目布局与条数两份列表；binder 不可序列化，
   恢复后置空并打 Debug 日志（`StateSkeletonLayout` tag），宿主需在重建后重新设置占位绑定。
 - 恢复与配置变更：条目拼装宿主按 `configuration.hashCode()` 失效重拼；
   昼夜切换后 Loading 不中断、不退化为空几何。
 
 #### 测试
 
-- 库单测新增 5 个测试类（实现方案 12.1 节）：`SkeletonItemSpecTest`（纯 JVM）、
+- 库单测新增 5 个测试类：`SkeletonItemSpecTest`（纯 JVM）、
   `SkeletonItemsValidationTest`（互斥/回滚/属性名）、`ItemAssembledTemplateTest`
   （8 行 24 几何、空文本失败指引、binder 逐条调用）、`ItemAssembledConfigChangeTest`
   （昼夜重建、SavedState 往返 + binder 置空日志）、`ItemAssembledScreenshotTest`
   （T1/T2 双 Roborazzi 基线 `skeleton_t1_item_rows.png` / `skeleton_t2_item_reuse.png`）。
 - 既有 `SkeletonConfigTest` 同步放宽：TEMPLATE 缺模板构造不再抛异常（完整性改由控件校验）。
 
-### 示例应用 `:sample`
+### 示例应用 `:sample`：条目模板与局部骨架
 
 - 新增「条目复用骨架」演示页（`recycler/ItemReuseSkeletonFragment` + `fragment_item_reuse_skeleton.xml`，
   `DemoCatalog` 入口 +1）：同一 `RecyclerView` + 同一份 `item_profile_row`，
@@ -49,6 +103,8 @@
 - 新增 `ItemReuseSkeletonFragmentTest`（5 项）：XML 声明解析、T1/T2 切换、Adapter 不变。
 - 中英文案各新增 `demo_item_reuse_*` 4 条；新增页仅引入与既有页同类的 ButtonStyle warning，
   无新增 Lint Error。
+- 新增「简历局部骨架」演示页：上半介绍与下半工作经历独立控制加载，演示局部骨架、空态和错误态；详情页统一使用标题栏。
+- 补齐简历示例缺少的 18 条英文资源，修复示例 Lint 的 `MissingTranslation` 错误。
 
 ## 0.0.3（2026-10-13）
 

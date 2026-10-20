@@ -16,8 +16,8 @@ import androidx.annotation.VisibleForTesting
  * 内部读取仅在控件构造路径发生，本对象不做额外线程安全包装。
  *
  * **不覆盖布局资源类属性**（`emptyLayout` / `errorLayout` / `loadingLayout` /
- * `skeletonTemplate` / `errorRetryViewId`），这些属性页面各异，
- * 仍由 XML 或运行时单独配置。
+ * `skeletonTemplate`），这些属性页面各异，
+ * 仍由 XML 或运行时单独配置。重试入口通过 `SslGlobalDefaults.retryConfig` 按状态参与合并。
  *
  * **优先级链**（低 → 高）：
  * ```

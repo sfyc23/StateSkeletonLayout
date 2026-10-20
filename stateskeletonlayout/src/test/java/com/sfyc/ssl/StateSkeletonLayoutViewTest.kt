@@ -211,7 +211,10 @@ class StateSkeletonLayoutViewTest {
         val layout = StateSkeletonLayout(activity)
         layout.setContentView(TextView(activity))
         val clicks = AtomicReference(0)
-        layout.setOnRetryClickListener { clicks.set(clicks.get() + 1) }
+        layout.setOnRetryListener { _, state, _ ->
+            assertEquals(StateLayoutState.ERROR, state)
+            clicks.set(clicks.get() + 1)
+        }
         attachAndLayout(layout)
 
         layout.render(StateLayoutState.ERROR)
@@ -300,9 +303,11 @@ class StateSkeletonLayoutViewTest {
             { layout.transitionDurationMillis = 10L },
             { layout.announceStateChanges = false },
             { layout.setStateViewLayout(StateLayoutState.EMPTY, R.layout.ssl_test_state_simple) },
-            { layout.setOnRetryClickListener(null) },
+            { layout.setOnRetryListener(null) },
             { layout.setOnStateViewCreatedListener(null) },
             { layout.setOnRenderedStateChangedListener(null) },
+            { layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry) },
+            { layout.getRetryViewIds(StateLayoutState.ERROR) },
         )
 
         failures.forEach { operation ->
@@ -331,12 +336,17 @@ class StateSkeletonLayoutViewTest {
         val layout = inflate(R.layout.ssl_test_host_attrs)
         attachAndLayout(layout)
         var clicked = 0
-        layout.setOnRetryClickListener { clicked++ }
+        var clickedState: StateLayoutState? = null
+        layout.setOnRetryListener { _, state, _ ->
+            clicked++
+            clickedState = state
+        }
 
         layout.render(StateLayoutState.ERROR)
         layout.findViewById<View>(R.id.ssl_test_retry).performClick()
 
         assertEquals(1, clicked)
+        assertEquals(StateLayoutState.ERROR, clickedState)
         assertEquals(
             "重试点击后状态应保持 ERROR，由调用方决定下一步",
             StateLayoutState.ERROR,

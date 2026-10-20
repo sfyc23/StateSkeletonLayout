@@ -115,7 +115,7 @@ class FeedDemoFragment : Fragment() {
             R.id.network_skeleton_avatar_6, R.id.network_skeleton_avatar_7, R.id.network_skeleton_avatar_8).forEach {
             b.feed.stateLayout.setSkeletonNodeConfig(it, SkeletonNodeConfig(shape = SkeletonShape.CIRCLE))
         }
-        b.feed.stateLayout.setOnRetryClickListener { viewModel.retry() }
+        b.feed.stateLayout.setOnRetryListener { _, _, _ -> viewModel.retry() }
         b.feed.stateLayout.setOnRenderedStateChangedListener { _, old, new, _ ->
             log?.add("RENDERED $old → $new")
             updateInputs()
@@ -380,7 +380,7 @@ class FeedDemoFragment : Fragment() {
         modelListener?.let { controller?.removeModelBuildListener(it) }
         controller?.cancelPendingModelBuild()
         binding?.let { b ->
-            b.feed.stateLayout.setOnRetryClickListener(null)
+            b.feed.stateLayout.setOnRetryListener(null)
             b.feed.stateLayout.setOnRenderedStateChangedListener(null)
             b.feed.root.setOnRefreshListener(null)
             b.feed.root.setOnLoadMoreListener(null)

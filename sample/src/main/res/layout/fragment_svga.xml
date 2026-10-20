@@ -28,7 +28,7 @@
             android:layout_marginTop="12dp"
             app:ssl_emptyLayout="@layout/state_empty"
             app:ssl_errorLayout="@layout/state_error"
-            app:ssl_errorRetryViewId="@id/demo_retry"
+            app:ssl_errorRetryViewIds="@array/demo_single_retry_ids"
             app:ssl_initialState="content"
             app:ssl_loadingLayout="@layout/state_loading_svga"
             app:ssl_loadingShowDelay="0"

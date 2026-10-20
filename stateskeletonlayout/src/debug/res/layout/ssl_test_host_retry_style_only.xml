@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 显式 style 优先级夹具：无直接数组属性，仅靠 style（含父 style）提供重试列表。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    style="@style/ssl_TestRetryPage"
+    app:ssl_emptyLayout="@layout/ssl_test_state_simple"
+    app:ssl_errorLayout="@layout/ssl_test_state_simple">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="20dp" />
+
+</com.sfyc.ssl.StateSkeletonLayout>

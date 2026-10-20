@@ -191,7 +191,8 @@ class StateSkeletonLayoutOptimizationTest {
     @Test fun `Parcel往返恢复运行时资源重试节点规则和状态描述`() {
         val layout = create()
         attach(layout)
-        layout.errorRetryViewId = R.id.ssl_test_retry
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
+        layout.setRetryViewIds(StateLayoutState.EMPTY, R.id.ssl_test_retry)
         layout.retryClickThrottleMillis = 750L
         layout.retryClicksEnabled = false
         layout.setSkeletonNodeConfig(R.id.ssl_test_retry, SkeletonNodeConfig(shape = SkeletonShape.CIRCLE))
@@ -297,11 +298,11 @@ class StateSkeletonLayoutOptimizationTest {
 
     @Test fun `重试入口可配置节流关闭并拒绝非当前错误页点击`() {
         val layout = create()
-        layout.errorRetryViewId = R.id.ssl_test_retry
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
         layout.retryClickThrottleMillis = 500
         attach(layout)
         var retries = 0
-        layout.setOnRetryClickListener { retries++ }
+        layout.setOnRetryListener { _, _, _ -> retries++ }
         layout.showError()
         val retry = layout.getStateView(StateLayoutState.ERROR)!!.findViewById<View>(R.id.ssl_test_retry)
         retry.performClick()
@@ -364,16 +365,18 @@ class StateSkeletonLayoutOptimizationTest {
         assertEquals(StateLayoutState.LOADING, layout.renderedState)
     }
 
-    @Test fun `保存的零重试ID在恢复时继续表示关闭统一重试入口`() {
+    @Test fun `保存的显式关闭在恢复时继续表示关闭重试入口`() {
         val layout = android.view.LayoutInflater.from(activity)
             .inflate(R.layout.ssl_test_host_attrs, null) as StateSkeletonLayout
-        layout.errorRetryViewId = 0
+        layout.setRetryViewIds(StateLayoutState.ERROR)
+        layout.setRetryViewIds(StateLayoutState.EMPTY)
         val saved = parcelState(layout)
         val restored = android.view.LayoutInflater.from(activity)
             .inflate(R.layout.ssl_test_host_attrs, null) as StateSkeletonLayout
         restored.id = layout.id
         restored.restoreHierarchyState(saved)
-        assertEquals(0, restored.errorRetryViewId)
+        assertTrue(restored.getRetryViewIds(StateLayoutState.ERROR).isEmpty())
+        assertTrue(restored.getRetryViewIds(StateLayoutState.EMPTY).isEmpty())
     }
 
     @Test fun `detach期间更换当前状态资源重新挂载后呈现新布局`() {
@@ -389,37 +392,30 @@ class StateSkeletonLayoutOptimizationTest {
         assertNotNull(layout.getStateView(StateLayoutState.ERROR))
     }
 
-    @Test fun `旧版无版本标记的Parcel仍可读取原有字段`() {
+    @Test fun `无效标记或版本在恢复时被拒绝且不修改实例`() {
+        // 标记不匹配：直接构造非法 Parcel，读取应抛异常。
+        val badMarker = Parcel.obtain()
+        try {
+            View.BaseSavedState(View.BaseSavedState.EMPTY_STATE).writeToParcel(badMarker, 0)
+            badMarker.writeInt(0x123456)
+            badMarker.writeInt(StateSkeletonLayout.SavedState.CURRENT_FORMAT_VERSION)
+            badMarker.setDataPosition(0)
+            val failure = runCatching {
+                StateSkeletonLayout.SavedState.CREATOR.createFromParcel(badMarker)
+            }.exceptionOrNull()
+            assertTrue(failure is IllegalArgumentException)
+        } finally { badMarker.recycle() }
+
+        // 版本不匹配：用当前 writer 产生合法 Parcel，再篡改版本号。
+        val layout = create()
+        attach(layout)
+        layout.setRetryViewIds(StateLayoutState.ERROR, R.id.ssl_test_retry)
+        val saved = parcelState(layout)[layout.id] as StateSkeletonLayout.SavedState
+        saved.formatVersion = StateSkeletonLayout.SavedState.CURRENT_FORMAT_VERSION + 1
         val parcel = Parcel.obtain()
         try {
-            // 独立重建优化前的线格式，不通过新 SavedState 的 writer 生成夹具。
-            View.BaseSavedState(View.BaseSavedState.EMPTY_STATE).writeToParcel(parcel, 0)
-            parcel.writeInt(StateLayoutState.ERROR.ordinal)
-            parcel.writeInt(1)
-            parcel.writeInt(StateTransitionEffect.NONE.ordinal)
-            parcel.writeLong(180)
-            parcel.writeInt(1)
-            parcel.writeLong(100)
-            parcel.writeLong(300)
-            parcel.writeInt(SkeletonSource.CONTENT.ordinal)
-            parcel.writeInt(0)
-            parcel.writeInt(SkeletonEffect.PULSE.ordinal)
-            parcel.writeInt(0xFF112233.toInt())
-            parcel.writeInt(0xFFFFFFFF.toInt())
-            parcel.writeFloat(12f)
-            parcel.writeLong(1200)
-            parcel.writeInt(SkeletonDirection.START_TO_END.ordinal)
-            parcel.writeInt(45)
-            parcel.writeFloat(0.35f)
-            parcel.writeFloat(1f)
-            parcel.setDataPosition(0)
-            val restored = StateSkeletonLayout.SavedState.CREATOR.createFromParcel(parcel)
-            assertEquals(1, restored.formatVersion)
-            assertEquals(StateLayoutState.ERROR.ordinal, restored.requestedOrdinal)
-            assertEquals(0xFF112233.toInt(), restored.maskColor)
-            assertEquals(12f, restored.cornerRadius, 0f)
-            assertEquals(100L, restored.showDelay)
-            assertEquals(Long.MAX_VALUE, restored.maximumPixels)
+            val writeFailure = runCatching { saved.writeToParcel(parcel, 0) }.exceptionOrNull()
+            assertTrue(writeFailure is IllegalArgumentException)
         } finally { parcel.recycle() }
     }
 }

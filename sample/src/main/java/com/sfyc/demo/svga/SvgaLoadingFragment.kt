@@ -74,7 +74,7 @@ class SvgaLoadingFragment : Fragment() {
         state.setOnStateViewReleasedListener { _, released, releasedView ->
             if (released == StateLayoutState.LOADING) releaseLoadingView(releasedView)
         }
-        state.setOnRetryClickListener { simulateLoad() }
+        state.setOnRetryListener { _, _, _ -> simulateLoad() }
         state.getStateView(StateLayoutState.LOADING)?.let(::bindLoadingView)
         viewLifecycleOwner.lifecycle.addObserver(playbackObserver)
 
@@ -237,7 +237,7 @@ class SvgaLoadingFragment : Fragment() {
             setOnStateViewCreatedListener(null)
             setOnStateViewReleasedListener(null)
             setOnRenderedStateChangedListener(null)
-            setOnRetryClickListener(null)
+            setOnRetryListener(null)
         }
         binding = null
         log = null

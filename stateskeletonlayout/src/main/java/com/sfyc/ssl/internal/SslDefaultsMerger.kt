@@ -13,6 +13,7 @@ import com.sfyc.ssl.SkeletonSource
 import com.sfyc.ssl.SslGlobalDefaults
 import com.sfyc.ssl.StateLayoutState
 import com.sfyc.ssl.StateTransitionEffect
+import com.sfyc.ssl.normalizeRetryIds
 
 /**
  * 合并后的最终配置：用于构造 [com.sfyc.ssl.StateSkeletonLayout]。
@@ -32,6 +33,12 @@ internal data class MergedSslConfig(
     val announceStateChanges: Boolean,
     /** 未配置 EMPTY / ERROR 布局时是否回退到库内置布局。 */
     val useBuiltInStateLayouts: Boolean,
+    /**
+     * 合并后的重试声明（未补库默认）：`null` 表示三层均未声明，继承时由调用方补库默认；
+     * 空列表表示显式关闭，非空表示替换该状态的完整入口。
+     */
+    val emptyRetryViewIds: List<Int>?,
+    val errorRetryViewIds: List<Int>?,
     /**
      * 颜色与圆角是否来自资源（而非宿主显式指定）。
      *
@@ -61,7 +68,7 @@ internal object SslDefaultsMerger {
     fun read(context: Context, attrs: AttributeSet?, defStyleAttr: Int): Pair<XmlSslAttrs, XmlSslAttrs> {
         val styleable = R.styleable.SslStateSkeletonLayout
         val defaults = context.obtainStyledAttributes(null, styleable, defStyleAttr, 0)
-        val theme = try { parseXmlAttrs(defaults) } finally { defaults.recycle() }
+        val theme = try { parseXmlAttrs(context, defaults) } finally { defaults.recycle() }
         if (attrs == null) return XmlSslAttrs() to theme
 
         val explicit = mutableSetOf<Int>()
@@ -85,7 +92,7 @@ internal object SslDefaultsMerger {
             } finally { style.recycle() }
         }
         val page = context.obtainStyledAttributes(attrs, styleable, 0, 0)
-        return try { parseXmlAttrs(page, explicit) to theme } finally { page.recycle() }
+        return try { parseXmlAttrs(context, page, explicit) to theme } finally { page.recycle() }
     }
 
     /**
@@ -135,6 +142,14 @@ internal object SslDefaultsMerger {
         val itemLayoutResId = xmlAttrs.skeletonItemLayoutResId.takeIf { it != 0 }
             ?: themeAttrs.skeletonItemLayoutResId.takeIf { it != 0 } ?: 0
         val itemCount = xmlAttrs.skeletonItemCount ?: themeAttrs.skeletonItemCount
+        // 重试入口逐状态合并：页面显式（含 style）> Global > Theme；库默认由调用方在确定布局后补齐。
+        // 高优先级空列表截断继承，不做并集。
+        val emptyRetry = xmlAttrs.emptyRetryViewIds
+            ?: global.retryConfig?.emptyViewIds
+            ?: themeAttrs.emptyRetryViewIds
+        val errorRetry = xmlAttrs.errorRetryViewIds
+            ?: global.retryConfig?.errorViewIds
+            ?: themeAttrs.errorRetryViewIds
         return MergedSslConfig(
             initialState = xmlAttrs.initialState ?: global.initialState ?: themeAttrs.initialState
                 ?: SslDefaultValues.INITIAL_STATE,
@@ -160,6 +175,8 @@ internal object SslDefaultsMerger {
             useBuiltInStateLayouts = global.useBuiltInStateLayouts
                 ?: SslDefaultValues.USE_BUILT_IN_STATE_LAYOUTS,
             colorsFromResources = maskFromResources && highlightFromResources && radiusFromResources,
+            emptyRetryViewIds = emptyRetry,
+            errorRetryViewIds = errorRetry,
         )
     }
 
@@ -170,7 +187,11 @@ internal object SslDefaultsMerger {
      * 属性未显式设置时 [TypedArray] 返回默认值，此处通过
      * [TypedArray.hasValue] 区分「未设置」与「设为默认值」。
      */
-    fun parseXmlAttrs(a: TypedArray, explicitIndices: Set<Int>? = null): XmlSslAttrs {
+    fun parseXmlAttrs(
+        context: Context,
+        a: TypedArray,
+        explicitIndices: Set<Int>? = null,
+    ): XmlSslAttrs {
         fun has(index: Int): Boolean = a.hasValue(index) &&
             (explicitIndices == null || index in explicitIndices)
         fun resource(index: Int): Int = if (has(index)) a.getResourceId(index, 0) else 0
@@ -232,7 +253,20 @@ internal object SslDefaultsMerger {
             } else {
                 null
             },
-            errorRetryViewId = resource(R.styleable.SslStateSkeletonLayout_ssl_errorRetryViewId),
+            emptyRetryViewIds = parseRetryIdsArray(
+                context,
+                a,
+                R.styleable.SslStateSkeletonLayout_ssl_emptyRetryViewIds,
+                "ssl_emptyRetryViewIds",
+                ::has,
+            ),
+            errorRetryViewIds = parseRetryIdsArray(
+                context,
+                a,
+                R.styleable.SslStateSkeletonLayout_ssl_errorRetryViewIds,
+                "ssl_errorRetryViewIds",
+                ::has,
+            ),
             initialState = initialState,
             useSkeleton = if (has(R.styleable.SslStateSkeletonLayout_ssl_useSkeleton)) {
                 a.getBoolean(R.styleable.SslStateSkeletonLayout_ssl_useSkeleton, false)
@@ -321,13 +355,62 @@ internal object SslDefaultsMerger {
             },
         )
     }
+
+    /**
+     * 解析重试 ID 数组属性：保留 null / 空列表 / 非空三种状态。
+     *
+     * - 未声明返回 `null`（继承）。
+     * - 空数组返回空列表（显式关闭）。
+     * - 条目必须为 ID 资源，否则抛出来自属性名与下标的异常。
+     */
+    private fun parseRetryIdsArray(
+        context: Context,
+        a: TypedArray,
+        index: Int,
+        attrName: String,
+        has: (Int) -> Boolean,
+    ): List<Int>? {
+        if (!has(index)) return null
+        val arrayResId = a.getResourceId(index, 0)
+        require(arrayResId != 0) { "$attrName 必须指向 <array> 资源" }
+        val outerType = try {
+            context.resources.getResourceTypeName(arrayResId)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("$attrName 指向的资源无效：$arrayResId", e)
+        }
+        require(outerType == "array") { "$attrName 必须指向 <array> 资源，当前为 $outerType" }
+        val typed = context.resources.obtainTypedArray(arrayResId)
+        try {
+            if (typed.length() == 0) return emptyList()
+            val raw = ArrayList<Int>(typed.length())
+            for (i in 0 until typed.length()) {
+                val id = typed.getResourceId(i, 0)
+                if (id == 0) {
+                    throw IllegalArgumentException("$attrName[$i] 必须为 @id/... 资源，混入了字符串、数值、颜色、布局或空条目")
+                }
+                val entryType = try {
+                    context.resources.getResourceTypeName(id)
+                } catch (e: Exception) {
+                    throw IllegalArgumentException("$attrName[$i] 指向的资源无效", e)
+                }
+                require(entryType == "id") { "$attrName[$i] 必须为 ID 资源，当前为 $entryType" }
+                raw += id
+            }
+            // 复制、去重与数量／ID 校验集中在配置对象，共用同一规则。
+            return normalizeRetryIds(raw, attrName) ?: emptyList()
+        } finally {
+            typed.recycle()
+        }
+    }
 }
 
 /**
  * XML 属性解析结果。字段为 null 表示 XML 未显式设置。
  *
- * 布局资源类属性（emptyLayout / errorLayout / loadingLayout / skeletonTemplate /
- * errorRetryViewId）不参与全局覆盖，始终保留 Int 值（0 表示未配置）。
+ * 布局资源类属性（emptyLayout / errorLayout / loadingLayout / skeletonTemplate）
+ * 不参与全局覆盖，始终保留 Int 值（0 表示未配置）。
+ * 重试 ID 列表按状态参与 Global / Theme 合并：null 表示未声明（继承），
+ * 空列表表示显式关闭，非空表示替换该状态的完整入口。
  */
 internal data class XmlSslAttrs(
     val emptyLayoutResId: Int = 0,
@@ -335,7 +418,8 @@ internal data class XmlSslAttrs(
     val customLoadingLayoutResId: Int = 0,
     val skeletonItemLayoutResId: Int = 0,
     val skeletonItemCount: Int? = null,
-    val errorRetryViewId: Int = 0,
+    val emptyRetryViewIds: List<Int>? = null,
+    val errorRetryViewIds: List<Int>? = null,
     val initialState: StateLayoutState? = null,
     val useSkeleton: Boolean? = null,
     val source: SkeletonSource? = null,

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Robolectric 测试夹具：XML 直接数组属性覆盖显式 style 数组，验证优先级。
+     直接属性用 direct 数组，style（ssl_TestRetryPage，含父 style）用 style 数组，
+     Theme（ssl_TestRetryTheme）用 theme 数组，Global 用代码安装，三层 ID 均不同。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    style="@style/ssl_TestRetryPage"
+    app:ssl_emptyLayout="@layout/ssl_test_state_simple"
+    app:ssl_errorLayout="@layout/ssl_test_state_simple"
+    app:ssl_emptyRetryViewIds="@array/ssl_test_retry_direct_empty"
+    app:ssl_errorRetryViewIds="@array/ssl_test_retry_direct_error">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="20dp" />
+
+</com.sfyc.ssl.StateSkeletonLayout>

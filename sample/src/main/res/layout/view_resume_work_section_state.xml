@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     app:ssl_emptyLayout="@layout/state_resume_work_empty"
     app:ssl_errorLayout="@layout/state_resume_work_error"
-    app:ssl_errorRetryViewId="@id/demo_retry"
+    app:ssl_errorRetryViewIds="@array/demo_single_retry_ids"
     app:ssl_initialState="loading"
     app:ssl_useSkeleton="true"
     app:ssl_skeletonEffect="shimmer"

@@ -147,10 +147,10 @@
     <string name="demo_diagnostics_fallback_allocation">遮罩 Bitmap 分配失败，改用静态绘制</string>
     <string name="demo_diagnostics_fallback_pixel_budget">遮罩面积超过 maximumMaskPixels：静态降级、动画不启动；已有遮罩会保留用于静态绘制（maskBytes 不为 0），若此前没有遮罩则保持为空</string>
 
-    <string name="demo_builtin_hint">本页 XML 不写 ssl_emptyLayout / ssl_errorLayout / ssl_errorRetryViewId，切到 EMPTY / ERROR 验证库内置兜底页面</string>
+    <string name="demo_builtin_hint">本页 XML 不写 ssl_emptyLayout / ssl_errorLayout / ssl_emptyRetryViewIds / ssl_errorRetryViewIds，切到 EMPTY / ERROR 验证库内置兜底页面</string>
     <string name="demo_builtin_btn_replace_message">替换内置错误页文案</string>
     <string name="demo_builtin_retry_count">重试点击：%1$d 次（由库自动接管的统一重试入口）</string>
-    <string name="demo_builtin_note">说明：库内置布局的三个 ID 是公开契约——ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry。未显式配置 ssl_errorRetryViewId 时，控件自动把内置重试按钮绑成统一重试入口。要改文案或换成自己的控件，用 getStateView(ERROR) 拿到根节点后 findViewById 替换即可；库的内置布局只依赖 android:* 属性，不会为兜底页引入 Material / AppCompat。</string>
+    <string name="demo_builtin_note">说明：库内置布局的三个 ID 是公开契约——ssl_builtin_state_root / ssl_builtin_state_message / ssl_builtin_state_retry。未显式配置重试入口时，控件自动把内置重试按钮绑成默认错误入口。要改文案或换成自己的控件，用 getStateView(ERROR) 拿到根节点后 findViewById 替换即可；库的内置布局只依赖 android:* 属性，不会为兜底页引入 Material / AppCompat。</string>
     <string name="demo_builtin_replaced_message">已由宿主替换的文案</string>
     <string name="demo_builtin_origin_message">加载失败，请重试</string>
 
@@ -175,4 +175,13 @@
     <string name="resume_scenario_error_once">首次失败后成功</string>
     <string name="resume_scenario_error">持续失败</string>
     <string name="resume_status">%1$s · %2$d ms · dataset %3$d\n上半 %4$s · 下半 %5$s</string>
+
+    <string name="demo_multi_hint">多入口：空态图片 + 文字、错误态图片 + 按钮触发同一回调；A 全开，B 的 ERROR 已显式关闭</string>
+    <string name="demo_multi_empty_retry">点击重试（文字入口）</string>
+    <string name="demo_multi_empty_image_desc">空态图片重试入口</string>
+    <string name="demo_multi_error_image_desc">错误态图片重试入口</string>
+    <string name="demo_multi_retry_count">重试：A=%1$d 次 B=%2$d 次</string>
+    <string name="demo_multi_btn_toggle">禁用重试</string>
+    <string name="demo_multi_btn_disable">禁用重试</string>
+    <string name="demo_multi_btn_enable">启用重试</string>
 </resources>

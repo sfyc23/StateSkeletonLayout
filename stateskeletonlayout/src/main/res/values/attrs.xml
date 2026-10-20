@@ -70,8 +70,10 @@
         </attr>
         <!-- 状态切换时长，单位毫秒，默认 180。 -->
         <attr name="ssl_transitionDuration" format="integer" />
-        <!-- 错误布局内的重试 View ID；未配置则不绑定统一重试入口。 -->
-        <attr name="ssl_errorRetryViewId" format="reference" />
+        <!-- 空态重试入口 ID 列表：指向 <array> 资源，条目为 @id/...；空数组显式关闭，未声明表示继承。 -->
+        <attr name="ssl_emptyRetryViewIds" format="reference" />
+        <!-- 错误态重试入口 ID 列表：指向 <array> 资源，条目为 @id/...；空数组显式关闭，未声明表示继承。 -->
+        <attr name="ssl_errorRetryViewIds" format="reference" />
         <!-- 进入 Loading/Empty/Error 时是否做一次性无障碍播报，默认 true。 -->
         <attr name="ssl_announceStateChanges" format="boolean" />
     </declare-styleable>

@@ -16,7 +16,7 @@ import com.sfyc.demo.ssl.databinding.FragmentBuiltinStateBinding
 import com.sfyc.ssl.R as SslR
 
 /**
- * 内置状态页示例：XML 完全不配置 `ssl_emptyLayout` / `ssl_errorLayout` / `ssl_errorRetryViewId`，
+ * 内置状态页示例：XML 完全不配置 `ssl_emptyLayout` / `ssl_errorLayout` / 重试 ID 数组，
  * 验证 EMPTY / ERROR 仍能直接显示库内置兜底页面。
  *
  * 内置布局的三个固定 ID（库 `ids.xml` 声明，宿主可直接引用）：
@@ -24,8 +24,8 @@ import com.sfyc.ssl.R as SslR
  * - `com.sfyc.ssl.R.id.ssl_builtin_state_message`：文案 TextView
  * - `com.sfyc.ssl.R.id.ssl_builtin_state_retry`：重试按钮
  *
- * 未显式配置 `ssl_errorRetryViewId` 时，控件会自动把内置重试按钮接成统一重试入口，
- * 宿主只需 `setOnRetryClickListener` 就能收到事件。想改主题文案时用
+ * 未显式配置重试入口时，控件会自动把内置重试按钮接成默认错误入口，
+ * 宿主只需 `setOnRetryListener` 就能收到事件。想改主题文案时用
  * `getStateView(ERROR)` 拿到根节点后 `findViewById` 替换即可。
  */
 class BuiltInStateDemoFragment : Fragment() {
@@ -53,10 +53,10 @@ class BuiltInStateDemoFragment : Fragment() {
         state.setOnRenderedStateChangedListener { _, old, new, _ ->
             log?.add("呈现：$old → $new")
         }
-        state.setOnRetryClickListener {
+        state.setOnRetryListener { _, retryState, clicked ->
             retryCount++
             binding.demoRetryCount.text = getString(R.string.demo_builtin_retry_count, retryCount)
-            log?.add("收到内置重试按钮事件：${SslR.id.ssl_builtin_state_retry}")
+            log?.add("收到内置重试事件：state=$retryState view=${clicked.id}(${SslR.id.ssl_builtin_state_retry})")
         }
         binding.demoBtnLoading.setOnClickListener { state.showLoading() }
         binding.demoBtnContent.setOnClickListener { state.showContent() }
