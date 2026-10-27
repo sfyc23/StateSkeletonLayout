@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- P02：Theme T2 + XML 直接 T1，期望 TEMPLATE + T1，清空 items 与数量。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:ssl_skeletonSource="template"
+    app:ssl_skeletonTemplate="@layout/ssl_test_template_fixed">
+    <View android:layout_width="40dp" android:layout_height="20dp" />
+</com.sfyc.ssl.StateSkeletonLayout>

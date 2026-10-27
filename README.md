@@ -416,9 +416,16 @@ stateLayout.skeletonItems = listOf(
 stateLayout.clearSkeletonItems()  // 清除条目拼装声明
 ```
 
-规则：T1 与 T2 互斥（并存抛异常，错误信息含属性名）；`skeletonItems` 仅
-`source=TEMPLATE` 下有效；binder 只做同步占位填充，不可序列化——进程重建后置空
+规则：页面 XML 显式配置优先于全局默认，覆盖适用于互斥的供给方式——页面选条目模板后，
+主题的整页模板不再参与互斥校验。T1 与 T2 在最高有效同层并存时抛异常（错误信息含双方属性名与来源层）；
+跨层时高层胜出，另一种供给及其附属数量不进入最终配置。`skeletonItems` 仅 `source=TEMPLATE` 下有效，
+高层供给可覆盖低层 `CONTENT` 并确定为 `TEMPLATE`，高层 `CONTENT` 可屏蔽低层模板供给；
+同层 `CONTENT + T2` 报错，同层 `CONTENT + T1` 保持许可。数量跟随选中的 item 布局：
+只改数量时修改继承到的 T2，换布局不带数量时用默认 `8`（不继承旧布局数量），切到 T1 / 内容取形时丢弃被覆盖的数量，
+孤立数量报错。显式清空（XML 直接 `@null` / `@empty`，Style 用 `@empty`）截断同字段继承；
+数量 `@empty` 表示重置继承（T2 恢复默认 `8`）。binder 只做同步占位填充，不可序列化——进程重建后置空
 （Debug 日志提示），宿主需在重建后重新设置；Grid 与横向行首版仍用 T1 整张模板。
+从父 Style 的 T1 切到 T2 时子 Style 应以 `@empty` 清除 T1，反向切换时清除 item 布局与数量。
 
 ### 三种效果（互斥）
 
@@ -656,14 +663,14 @@ Loading 一旦真正上屏至少保留该时长（等待首次布局的时间不
 | 属性 | 格式 / 枚举 | 默认值 | 前置条件 / 错误行为 |
 | --- | --- | --- | --- |
 | `ssl_initialState` | `content`、`loading`、`empty`、`error` | `content` | 初始请求进入真实呈现流程；骨架就绪后才推进 rendered |
-| `ssl_emptyLayout` | reference | 无（回退库内置空态页） | 未配置时用内置兜底页，不抛异常；`useBuiltInStateLayouts=false` 时缺配置抛异常（含属性名） |
-| `ssl_errorLayout` | reference | 无（回退库内置错误页） | 未配置时用内置兜底页，自带重试按钮并被自动接管为统一重试入口 |
-| `ssl_loadingLayout` | reference | 无 | `useSkeleton=false`（默认）缺配置时打警告并回退骨架 |
-| `ssl_useSkeleton` | boolean | `false` | `true`=骨架、`false`=自定义布局 |
-| `ssl_skeletonSource` | `content`、`template` | `content` | — |
-| `ssl_skeletonTemplate` | reference | 无 | `template` 缺模板/模板无形状时抛异常；与 `ssl_skeletonItemLayout` 互斥 |
-| `ssl_skeletonItemLayout` | reference | 无 | 仅 `template` 下有效；常指向成功后 RecyclerView 的 item 布局 |
-| `ssl_skeletonItemCount` | integer | `8` | 必须大于 0；XML 单类型快捷声明，多类型用代码 `skeletonItems` |
+| `ssl_emptyLayout` | reference | 无（回退库内置空态页） | 未配置时用内置兜底页，不抛异常；`useBuiltInStateLayouts=false` 时缺配置抛异常（含属性名）；显式清空后不再继承 Theme 布局，仍可按开关使用内置兜底 |
+| `ssl_errorLayout` | reference | 无（回退库内置错误页） | 未配置时用内置兜底页，自带重试按钮并被自动接管为统一重试入口；显式清空语义同上 |
+| `ssl_loadingLayout` | reference | 无 | `useSkeleton=false`（默认）缺配置时打警告并回退骨架；显式清空后不再继承 Theme 布局；提供本布局不自动切换分支 |
+| `ssl_useSkeleton` | boolean | `false` | `true`=骨架、`false`=自定义布局；XML 优先于 Global / Theme，提供某分支资源不自动切换分支 |
+| `ssl_skeletonSource` | `content`、`template` | `content` | 高层 `CONTENT` 屏蔽低层模板供给，高层供给覆盖低层 `CONTENT` 并确定为 `template`；同层 `content + T2` 报错，同层 `content + T1` 许可 |
+| `ssl_skeletonTemplate` | reference | 无 | `template` 下 T1 / T2 任选其一，缺配/无形状时抛异常；同层 T1 + T2 报错，跨层高优先胜出；直接属性 `@null` / `@empty`、Style `@empty` 显式清空截断继承 |
+| `ssl_skeletonItemLayout` | reference | 无 | 仅 `template` 下有效；常指向成功后 RecyclerView 的 item 布局；互斥与清空语义同上，清空同时解除低层数量 |
+| `ssl_skeletonItemCount` | integer | `8` | 必须大于 0；XML 单类型快捷声明，多类型用代码 `skeletonItems`；跟随选中布局，换布局不继承旧数量，`@empty` 重置为默认，孤立数量报错 |
 | `ssl_skeletonEffect` | `solid`、`shimmer`、`pulse` | `shimmer` | 三者互斥 |
 | `ssl_maskColor` | color | `@color/ssl_mask_default` | 骨架基础色 |
 | `ssl_highlightColor` | color | `@color/ssl_highlight_default` | 仅流光使用 |

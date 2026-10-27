@@ -382,10 +382,20 @@ stateLayout.skeletonItems = listOf(
 stateLayout.clearSkeletonItems()  // Clears the item-assembled declaration
 ```
 
-Rules: T1 and T2 are mutually exclusive (coexistence throws, naming the attributes);
-`skeletonItems` is only valid with `source=TEMPLATE`; binders only do synchronous
-placeholder filling and are not serializable — they are dropped after process
-recreation (with a Debug log), so hosts must re-set them; Grid and horizontal rows
+Rules: explicit page XML wins over global defaults, including mutually exclusive supplies —
+a page-level item template suppresses the themed whole template from mutual-exclusion checks.
+T1 and T2 throw only when coexisting on the highest effective same layer (naming both attributes
+and the source layer); across layers the higher-priority supply wins and the other supply plus
+its counts never enter the final config. `skeletonItems` is only valid with `source=TEMPLATE`;
+a higher supply overrides a lower `CONTENT` and pins `TEMPLATE`, while a higher `CONTENT`
+shields lower supplies; same-layer `CONTENT + T2` throws, same-layer `CONTENT + T1` stays allowed.
+Counts follow the selected item layout: count-only edits the inherited T2, a new layout without
+a count uses default `8` (never inheriting the old layout's count), switching to T1 / content
+drops covered counts, and orphan counts throw. Explicit clearing (direct `@null` / `@empty`,
+Style `@empty`) truncates inheritance for the same field; count `@empty` resets to default `8`.
+Switching from a parent Style's T1 to T2 should clear T1 with `@empty` (and vice versa).
+Binders only do synchronous placeholder filling and are not serializable — they are dropped after
+process recreation (with a Debug log), so hosts must re-set them; Grid and horizontal rows
 still use T1 whole templates in this release.
 
 ### Three Mutually Exclusive Effects
@@ -618,14 +628,14 @@ Priority: Built-in < Theme Defaults < Global Config < XML Explicit Style < XML D
 | Attribute | Format / Enum | Default | Precondition / Error Behavior |
 | --- | --- | --- | --- |
 | `ssl_initialState` | `content`, `loading`, `empty`, `error` | `content` | Initial request enters real rendering pipeline; rendered advances only after skeleton is ready |
-| `ssl_emptyLayout` | reference | None (falls back to the built-in empty page) | Uses the built-in fallback page when unconfigured, no exception; with `useBuiltInStateLayouts=false` it throws, naming the attribute |
-| `ssl_errorLayout` | reference | None (falls back to the built-in error page) | Uses the built-in fallback page when unconfigured, with its retry button auto-adopted as the unified retry entry point |
-| `ssl_loadingLayout` | reference | None | Warns and falls back to skeleton if unconfigured when `useSkeleton=false` (default) |
-| `ssl_useSkeleton` | boolean | `false` | `true` = skeleton, `false` = custom layout |
-| `ssl_skeletonSource` | `content`, `template` | `content` | — |
-| `ssl_skeletonTemplate` | reference | None | Throws exception if `template` lacks template or template has no shapes; mutually exclusive with `ssl_skeletonItemLayout` |
-| `ssl_skeletonItemLayout` | reference | None | Only valid with `template`; usually points at the item layout the RecyclerView uses after success |
-| `ssl_skeletonItemCount` | integer | `8` | Must be greater than 0; single-type shorthand in XML, multi-type goes through `skeletonItems` in code |
+| `ssl_emptyLayout` | reference | None (falls back to the built-in empty page) | Uses the built-in fallback page when unconfigured, no exception; with `useBuiltInStateLayouts=false` it throws, naming the attribute; explicit clearing stops Theme inheritance but keeps the built-in fallback per the flag |
+| `ssl_errorLayout` | reference | None (falls back to the built-in error page) | Uses the built-in fallback page when unconfigured, with its retry button auto-adopted as the unified retry entry point; clearing semantics as above |
+| `ssl_loadingLayout` | reference | None | Warns and falls back to skeleton if unconfigured when `useSkeleton=false` (default); clearing stops Theme inheritance; providing it never flips the branch alone |
+| `ssl_useSkeleton` | boolean | `false` | `true` = skeleton, `false` = custom layout; XML wins over Global / Theme, providing one branch never auto-selects it |
+| `ssl_skeletonSource` | `content`, `template` | `content` | Higher `CONTENT` shields lower supplies, higher supplies override lower `CONTENT` as `template`; same-layer `content + T2` throws, same-layer `content + T1` stays allowed |
+| `ssl_skeletonTemplate` | reference | None | `template` needs either T1 or T2; missing/shapeless templates throw; same-layer T1 + T2 throws, higher cross-layer wins; direct `@null` / `@empty` and Style `@empty` truncate inheritance |
+| `ssl_skeletonItemLayout` | reference | None | Only valid with `template`; usually points at the item layout the RecyclerView uses after success; same mutual-exclusion/clearing semantics, clearing also drops lower counts |
+| `ssl_skeletonItemCount` | integer | `8` | Must be greater than 0; single-type shorthand in XML, multi-type goes through `skeletonItems` in code; follows the selected layout, new layouts never inherit old counts, `@empty` resets to default, orphan counts throw |
 | `ssl_skeletonEffect` | `solid`, `shimmer`, `pulse` | `shimmer` | Mutually exclusive |
 | `ssl_maskColor` | color | `@color/ssl_mask_default` | Skeleton base color |
 | `ssl_highlightColor` | color | `@color/ssl_highlight_default` | Used only by shimmer |

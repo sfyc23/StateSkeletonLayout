@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- P17：页面 Style 用 @empty 清除父 T1 再提供 T2，清空保留，采用 T2。 -->
+<com.sfyc.ssl.StateSkeletonLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    style="@style/ssl_TestTemplatePage_ParentT1_To_T2">
+    <View android:layout_width="40dp" android:layout_height="20dp" />
+</com.sfyc.ssl.StateSkeletonLayout>

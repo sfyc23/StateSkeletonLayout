@@ -12,27 +12,44 @@
             <enum name="error" value="3" />
         </attr>
         <!-- 空内容页布局。未配置时回退库内置空态页，不抛异常、不显示空白。
-             需要"缺配置立即暴露"可用 SslGlobalDefaults(useBuiltInStateLayouts = false) 恢复严格失败。 -->
+             需要"缺配置立即暴露"可用 SslGlobalDefaults(useBuiltInStateLayouts = false) 恢复严格失败。
+             显式清空（XML 直接属性 @null / @empty，页面 Style / Theme Style @empty）截断同字段继承，
+             不再继承 Theme 宿主布局；useBuiltInStateLayouts=true 时仍可用库内置兜底。 -->
         <attr name="ssl_emptyLayout" format="reference" />
-        <!-- 错误页布局。未配置时回退库内置错误页（自带重试按钮，会被自动接管为统一重试入口）。 -->
+        <!-- 错误页布局。未配置时回退库内置错误页（自带重试按钮，会被自动接管为统一重试入口）。
+             显式清空语义同 ssl_emptyLayout。 -->
         <attr name="ssl_errorLayout" format="reference" />
-        <!-- 自定义加载布局。useSkeleton 为 false（默认）时必填；未配置会自动回退到骨架并打警告。 -->
+        <!-- 自定义加载布局。useSkeleton 为 false（默认）时未配置会自动回退到骨架并打警告。
+             显式清空后不再继承 Theme 布局。提供本布局不等于选择该分支，仍以 ssl_useSkeleton 为准。 -->
         <attr name="ssl_loadingLayout" format="reference" />
 
-        <!-- 是否使用骨架遮罩：true=骨架，false=自定义布局，默认 false（即默认自定义布局）。 -->
+        <!-- 是否使用骨架遮罩：true=骨架，false=自定义布局，默认 false（即默认自定义布局）。
+             加载分支选择：XML 布尔值优先于 Global / Theme；提供某分支资源不自动切换分支。 -->
         <attr name="ssl_useSkeleton" format="boolean" />
-        <!-- 骨架形状来源：content（内容取形）或 template（独立模板），默认 content。 -->
+        <!-- 骨架形状来源：content（内容取形）或 template（独立模板），默认 content。
+             优先级：XML 直接属性 > XML 显式 Style > Global > Theme 默认 > 库默认。
+             高层 CONTENT 可屏蔽低层模板供给及其数量；高层模板供给可覆盖低层 CONTENT 并确定为 template。
+             同层显式 content + 条目模板报错，同层 content + 整页模板保持许可（content 生效）。 -->
         <attr name="ssl_skeletonSource" format="enum">
             <enum name="content" value="0" />
             <enum name="template" value="1" />
         </attr>
-        <!-- 独立骨架模板布局。source 为 template 时必填，仅描述形状。 -->
+        <!-- 整页独立模板布局（T1），仅描述形状。
+             source 为 template 时，T1 与条目拼装模板（T2）任选其一，互斥且至少其一。
+             页面显式 T2 优先于主题默认 T1；同层同时声明 T1 / T2 报错。
+             XML 直接属性可用 @null / @empty 显式清空以截断继承，Style 用 @empty。 -->
         <attr name="ssl_skeletonTemplate" format="reference" />
-        <!-- 条目拼装模板：成功态 item 布局复用（单类型快捷声明）。
+        <!-- 条目拼装模板（T2）：成功态 item 布局复用（单类型快捷声明）。
             仅 source 为 template 时有效，与 ssl_skeletonTemplate 互斥。
-            常指向加载成功后 RecyclerView 使用的同一份 item 布局。 -->
+            常指向加载成功后 RecyclerView 使用的同一份 item 布局。
+            高层 T2 覆盖低层 T1 / CONTENT，低层数量不跟随新布局；同层 T1 + T2 报错。
+            显式清空同时解除低层数量，Style 切换供给时应同步清空另一种供给。 -->
         <attr name="ssl_skeletonItemLayout" format="reference" />
-        <!-- 该布局重复拼装的条数，必须大于 0。未显式设置时默认 8。 -->
+        <!-- 该布局重复拼装的条数，必须大于 0。未显式设置时默认 8。
+             数量跟随选中的 item 布局：只改数量时修改继承到的 T2；
+             重新声明布局但不声明数量时用默认 8，不继承旧布局数量；
+             切换为整页模板或内容取形时丢弃被覆盖的数量；孤立数量报错。
+             用 @empty 显式重置数量继承（T2 恢复默认 8）。0 或负数始终非法。 -->
         <attr name="ssl_skeletonItemCount" format="integer" />
         <!-- 骨架效果：solid（纯色）| shimmer（流光）| pulse（脉冲），默认 shimmer。 -->
         <attr name="ssl_skeletonEffect" format="enum">
@@ -79,7 +96,8 @@
     </declare-styleable>
 
     <!-- Theme Attribute：指向一个 Style，作为全局默认配置的辅助层。
-        优先级：库内置 < 本属性（Theme） < Global Config < XML 属性 < 运行时 setter。
-        宿主可在 AppTheme 中通过 <item name="ssl_stateSkeletonLayoutStyle">@style/…</item> 引用。 -->
+        优先级：库内置 < 本属性（Theme 默认） < Global Config < XML 显式 Style < XML 直接属性 < 运行时 setter。
+        页面 style="?attr/..." 仍属于页面显式 Style。宿主可在 AppTheme 中通过
+        <item name="ssl_stateSkeletonLayoutStyle">@style/…</item> 引用。 -->
     <attr name="ssl_stateSkeletonLayoutStyle" format="reference" />
 </resources>

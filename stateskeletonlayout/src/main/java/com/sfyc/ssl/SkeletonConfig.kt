@@ -15,11 +15,15 @@ import android.content.Context
  * 它们是状态协调器的参数，见 [StateSkeletonLayout]。
  *
  * @property source 骨架形状来源：内容取形或独立模板。
+ *   构造声明合并时，高层模板供给可覆盖低层 `CONTENT` 并确定为 `TEMPLATE`；
+ *   高层 `CONTENT` 可屏蔽低层模板供给；同层 `CONTENT + T2` 仍为硬冲突，
+ *   同层 `CONTENT + T1` 保持许可（`CONTENT` 生效）。
  * @property templateLayoutResId 整张独立模板布局资源（T1）。
  *   `TEMPLATE` 下 T1 与条目拼装模板（T2，见 [SkeletonItemSpec]）互斥、
  *   且至少需要其中一种：本类只校验“非零即有效布局”的形式合法性，
  *   “TEMPLATE 下两者至少其一”的完整性由 [StateSkeletonLayout] 在
  *   构造 / setter / preflight 统一校验（T2 的条目声明不在本类中）。
+ *   本类保存的是归一化后的有效配置不变量，不保留跨层声明来源。
  * @property effect 骨架效果，三者互斥。
  * @property maskColor 骨架基础颜色。
  * @property highlightColor 流光高亮颜色（仅 [SkeletonEffect.SHIMMER] 使用）。

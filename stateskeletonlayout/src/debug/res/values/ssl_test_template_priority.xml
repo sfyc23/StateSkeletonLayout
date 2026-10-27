@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 模板优先级回归夹具：每层用不同布局 / 数量 / 颜色，避免值相同掩盖优先级错误。 -->
+
+    <!-- Theme 默认：T1 整页模板。 -->
+    <style name="ssl_TestTemplateDefaults_T1" parent="ssl_StateSkeletonLayout">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonTemplate">@layout/ssl_test_template_fixed</item>
+    </style>
+    <style name="ssl_TestTemplateTheme_T1" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="ssl_stateSkeletonLayoutStyle">@style/ssl_TestTemplateDefaults_T1</item>
+    </style>
+
+    <!-- Theme 默认：T2 条目拼装（布局 A × 5）。 -->
+    <style name="ssl_TestTemplateDefaults_T2" parent="ssl_StateSkeletonLayout">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonItemLayout">@layout/ssl_test_item_row_fixed</item>
+        <item name="ssl_skeletonItemCount">5</item>
+    </style>
+    <style name="ssl_TestTemplateTheme_T2" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="ssl_stateSkeletonLayoutStyle">@style/ssl_TestTemplateDefaults_T2</item>
+    </style>
+
+    <!-- 页面 Style：T1（用于 P07 父层）。 -->
+    <style name="ssl_TestTemplatePage_T1" parent="">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonTemplate">@layout/ssl_test_template_fixed</item>
+    </style>
+
+    <!-- 页面 Style：T2（布局 A × 5，用于 P08 父层）。 -->
+    <style name="ssl_TestTemplatePage_T2" parent="">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonItemLayout">@layout/ssl_test_item_row_fixed</item>
+        <item name="ssl_skeletonItemCount">5</item>
+    </style>
+
+    <!-- 页面 Style：从父 T1 切到 T2（子用 @empty 清除 T1）。 -->
+    <style name="ssl_TestTemplatePageParent_T1" parent="">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonTemplate">@layout/ssl_test_template_fixed</item>
+    </style>
+    <style name="ssl_TestTemplatePage_ParentT1_To_T2" parent="ssl_TestTemplatePageParent_T1">
+        <item name="ssl_skeletonTemplate">@empty</item>
+        <item name="ssl_skeletonItemLayout">@layout/ssl_test_item_row_fixed</item>
+        <item name="ssl_skeletonItemCount">3</item>
+    </style>
+
+    <!-- 页面 Style：从父 T2 切到 T1（清除 item 布局与数量）。 -->
+    <style name="ssl_TestTemplatePageParent_T2" parent="">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonItemLayout">@layout/ssl_test_item_row_fixed</item>
+        <item name="ssl_skeletonItemCount">5</item>
+    </style>
+    <style name="ssl_TestTemplatePage_ParentT2_To_T1" parent="ssl_TestTemplatePageParent_T2">
+        <item name="ssl_skeletonItemLayout">@empty</item>
+        <item name="ssl_skeletonItemCount">@empty</item>
+        <item name="ssl_skeletonTemplate">@layout/ssl_test_template_fixed</item>
+    </style>
+
+    <!-- P20：布局值经 ?attr 提供，按真实 Theme 解析。 -->
+    <attr name="ssl_test_templateAttr" format="reference" />
+    <style name="ssl_TestAttrTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="ssl_test_templateAttr">@layout/ssl_test_item_row_fixed</item>
+    </style>
+    <style name="ssl_TestTemplatePage_AttrRef" parent="">
+        <item name="ssl_skeletonSource">template</item>
+        <item name="ssl_skeletonItemLayout">?attr/ssl_test_templateAttr</item>
+        <item name="ssl_skeletonItemCount">3</item>
+    </style>
+</resources>

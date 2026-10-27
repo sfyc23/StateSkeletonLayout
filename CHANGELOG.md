@@ -2,6 +2,26 @@
 
 记录库模块、示例应用和公开文档的变更。
 
+## 未发布（配置优先级与互斥修复，基于 0.0.4）
+
+本次为配置合并修复，未升级依赖、未新增公开配置字段、未发布版本。
+
+### 行为变更
+
+- 页面 XML 显式配置优先于全局默认，覆盖适用于互斥的供给方式：页面选条目模板（T2）后，主题整页模板（T1）不再参与互斥校验；合法跨层组合不再构造崩溃。
+- 高层模板供给覆盖低层不兼容的 `CONTENT` 默认值并确定为 `TEMPLATE`；高层 `CONTENT` 屏蔽低层模板供给及其数量；同层 `CONTENT + T2` 仍报错，同层 `CONTENT + T1` 保持许可。
+- 页面重新声明 item 布局但不声明数量时改用默认 `8`，不再继承旧布局数量；只改数量时修改继承到的 T2；孤立数量报错。
+- 布局资源显式清空截断继承：XML 直接属性支持 `@null` / `@empty`，页面 Style / Theme Style 用 `@empty`；清空 T1 只屏蔽 T1，清空 item 布局同时解除低层数量，数量 `@empty` 重置为默认；EMPTY / ERROR 清空后仍按 `useBuiltInStateLayouts` 使用库内置兜底。
+- XML 直接属性与页面有效 Style 分开比较；Style 父子视为同一层，跨字段切换须显式清空另一种供给。
+- 内部声明来源与三态只在构造合并期间使用，不存入长期配置、不新增公开 API、不写入 SavedState（仍为 v4）。
+
+### 测试与验证
+
+- 新增 `SslTemplatePriorityTest`（P01–P19、P21–P27 合并单元测试与真实布局 inflate，含直接 / Style 分层、Theme 引用、`@empty` 清空，覆盖 API 26 与 34）。
+- 新增 `src/debug` 夹具：`ssl_test_template_priority.xml`、`ssl_test_host_template_priority_p*.xml`（全局 T1 / T2、页面覆盖及清空声明）。
+- 已执行：`:stateskeletonlayout:testDebugUnitTest :sample:testDebugUnitTest`、`assembleDebug`、`lintRelease` / `lintDebug` 均通过。
+- 未执行：真机 sample 条目复用骨架与宿主 AnanGame 技能审核页设备验收；本文不记为运行链路已验证。
+
 ## 0.0.4（2026-10-20）
 
 本版本新增 EMPTY / ERROR 多重试入口和条目拼装模板 T2，包含 `0.0.3` 之后的示例改进。

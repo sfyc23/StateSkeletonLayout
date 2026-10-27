@@ -14,13 +14,17 @@ import androidx.annotation.Px
  *
  * **不覆盖布局资源类属性**（`emptyLayout` / `errorLayout` / `loadingLayout` /
  * `skeletonTemplate` / `skeletonItems`），这些属性页面各异，
- * 仍由 XML 或运行时单独配置。重试入口通过 [retryConfig] 按状态参与默认值合并。
+ * 仍由 XML 或运行时单独配置。「全局模板」实际来自 Theme 默认 Style，
+ * 本类不提供布局资源或 `skeletonItems` 字段。重试入口通过 [retryConfig] 按状态参与默认值合并。
  *
- * **优先级链**（低 → 高）：
+ * **优先级链**（低 → 高，构造声明合并）：
  * ```
- * 库内置常量 < Theme Attribute < Global Config < XML 属性 < 运行时 setter
+ * 库内置常量 < Theme 默认 Style / Theme 值 < Global Config < XML 显式 Style < XML 直接属性 < 运行时 setter
  * ```
  * 同一属性在 Theme 与 Global 同时设置时，Global 优先。
+ * 互斥的模板供给（T1 / T2）与来源、数量一起归一化：高层供给覆盖低层不兼容的
+ * `CONTENT` 默认值，高层 `CONTENT` 屏蔽低层模板供给；`null` 继续表示不参与覆盖，
+ * 不得改成清空语义。
  *
  * 配置是不可变快照；[StateSkeletonLayoutDefaults.install] 采用整体替换语义，
  * 不做字段级合并。已创建实例不受后续 install 影响。

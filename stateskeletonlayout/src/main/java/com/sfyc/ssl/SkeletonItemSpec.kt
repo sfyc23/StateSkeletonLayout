@@ -12,7 +12,9 @@ import androidx.annotation.LayoutRes
  * 业务 `RecyclerView.Adapter` 不被替换、不被读取。
  *
  * 与整张模板布局（`SkeletonConfig.templateLayoutResId`）互斥，
- * 两者同时配置时抛异常。
+ * 最终有效组合中两者同时存在时抛异常；低层被高层明确替换的供给不参与检查。
+ * 数量跟随选中的 item 布局：重新声明布局但不声明数量时用默认 [DEFAULT_COUNT]，
+ * 不继承旧布局数量；`@empty` 重置数量继承时同样恢复默认。
  *
  * @property layoutResId 成功态 item 布局资源（常常与业务 Adapter 的 item 布局为同一份）。
  * @property count 该布局重复拼装的条数，必须大于 0。

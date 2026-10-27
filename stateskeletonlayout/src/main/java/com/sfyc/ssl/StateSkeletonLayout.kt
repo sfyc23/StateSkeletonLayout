@@ -375,20 +375,23 @@ class StateSkeletonLayout @JvmOverloads constructor(
     // endregion
 
     init {
-        val (xmlAttrs, themeAttrs) = SslDefaultsMerger.read(context, attrs, defStyleAttr)
-        val merged = SslDefaultsMerger.merge(context, xmlAttrs, StateSkeletonLayoutDefaults.current, themeAttrs)
+        // 构造声明按 XML 直接属性 > XML 显式 Style > Global > Theme 默认 > 库默认归一化。
+        // 互斥的模板供给（T1 整页模板 / T2 条目拼装）与来源、数量一起在合并器内解决，
+        // 此处只消费归一化后的最终组合，不再跨层拼装后报错。
+        val layered = SslDefaultsMerger.readLayered(context, attrs, defStyleAttr)
+        val merged = SslDefaultsMerger.mergeLayered(
+            context,
+            layered.direct,
+            layered.pageStyle,
+            StateSkeletonLayoutDefaults.current,
+            layered.theme,
+        )
         useBuiltInStateLayouts = merged.useBuiltInStateLayouts
 
-        // 布局资源类属性不参与 Global 覆盖（页面各异），逐项按 XML > Theme > 内置兜底解析。
-        val xmlEmpty = xmlAttrs.emptyLayoutResId.takeIf { it != 0 }
-        val xmlError = xmlAttrs.errorLayoutResId.takeIf { it != 0 }
-        emptyLayoutResId = xmlEmpty ?: themeAttrs.emptyLayoutResId
-            .takeIf { it != 0 }
-            ?: builtInLayoutOrZero(R.layout.ssl_builtin_state_empty)
-        errorLayoutResId = xmlError ?: themeAttrs.errorLayoutResId
-            .takeIf { it != 0 }
-            ?: builtInLayoutOrZero(R.layout.ssl_builtin_state_error)
-        customLoadingLayoutResId = xmlAttrs.customLoadingLayoutResId.takeIf { it != 0 } ?: themeAttrs.customLoadingLayoutResId
+        // 状态布局已在合并器内统一处理清空屏障与内置兜底（含显式清空截断继承）。
+        emptyLayoutResId = merged.emptyLayoutResId
+        errorLayoutResId = merged.errorLayoutResId
+        customLoadingLayoutResId = merged.customLoadingLayoutResId
 
         // 创建尚未绑定状态根的控制器 → 解析声明与最终布局来源 → 安装有效列表。
         // 库默认：EMPTY 为空；ERROR 在使用库内置错误布局时为内置按钮，否则为空。
